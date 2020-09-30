@@ -46,7 +46,8 @@ ASSIGNMENT_OPERATOR: ':=';
 
 //--- PARSER: ---
 
-stylesheet: variable_declaration* style_rule+ EOF;
+stylesheet: variable_declaration* style_rule+;
+
 style_rule: selector OPEN_BRACE style_body CLOSE_BRACE;
 selector: tag_selector | class_selector | id_selector;
 
