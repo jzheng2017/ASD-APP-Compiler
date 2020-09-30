@@ -59,7 +59,7 @@ property_identifier: LOWER_IDENT;
 if_clause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditional_body CLOSE_BRACE else_clause?;
 else_clause: ELSE OPEN_BRACE conditional_body CLOSE_BRACE;
 
-condition: variable_identifier;
+condition: variable_identifier | TRUE | FALSE;
 conditional_body: style_declaration* if_clause*;
 
 property_value: hardcoded_value | variable_identifier | calculation;
