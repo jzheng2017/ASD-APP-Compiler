@@ -59,23 +59,18 @@ property_identifier: LOWER_IDENT;
 if_clause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditional_body CLOSE_BRACE else_clause?;
 else_clause: ELSE OPEN_BRACE conditional_body CLOSE_BRACE;
 
-
 condition: variable_identifier;
 conditional_body: style_declaration* if_clause*;
 
 property_value: hardcoded_value | variable_identifier | calculation;
 
 calculation: sub_calculation+ ;
-sub_calculation: general_value MUL general_value
-                | general_value PLUS general_value
-                | general_value MIN general_value
-                | MUL general_value
-                | PLUS general_value
-                | MIN general_value;
-
+sub_calculation: sub_calculation MUL sub_calculation
+                | sub_calculation PLUS sub_calculation
+                | sub_calculation MIN sub_calculation
+                | general_value;
 
 general_value: variable_identifier | hardcoded_value;
-
 
 hardcoded_value: dimension_size | COLOR | SCALAR;
 dimension_size: PIXELSIZE | PERCENTAGE;
