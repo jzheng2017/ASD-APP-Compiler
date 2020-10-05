@@ -60,10 +60,10 @@ propertyIdentifier: LOWER_IDENT;
 ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditionalBody CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
-condition: variableIdentifier | TRUE | FALSE;
+condition: variableReference | TRUE | FALSE;
 conditionalBody: styleDeclaration* ifClause*;
 
-propertyValue: hardcodedValue | variableIdentifier | calculation;
+propertyValue: hardcodedPropertyValue | variableReference | calculation;
 
 calculation: firstSubcalculation consecutiveSubcalculation*;
 
@@ -74,9 +74,12 @@ consecutiveSubcalculation:  MUL generalValue
                          | (PLUS | MIN) generalValue;
 
 
-generalValue: variableIdentifier | hardcodedValue;
+generalValue: variableReference | hardcodedValue;
+
+hardcodedPropertyValue: hardcodedValue;
 
 hardcodedValue: dimensionSize | COLOR | SCALAR;
+
 dimensionSize: PIXELSIZE | PERCENTAGE;
 
 tagSelector: LOWER_IDENT | CAPITAL_IDENT;
@@ -84,8 +87,9 @@ classSelector: CLASS_IDENT;
 idSelector: ID_IDENT;
 
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
+variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
+variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference;
 
 
 
