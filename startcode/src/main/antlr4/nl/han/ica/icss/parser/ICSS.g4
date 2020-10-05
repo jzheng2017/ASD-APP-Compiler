@@ -65,13 +65,14 @@ conditionalBody: styleDeclaration* ifClause*;
 
 propertyValue: hardcodedValue | variableIdentifier | calculation;
 
-calculation: subCalculation+ ;
-subCalculation: generalValue MUL generalValue
-                | MUL generalValue
-                | generalValue PLUS generalValue
-                | PLUS generalValue
-                | generalValue MIN generalValue
-                | MIN generalValue;
+calculation: firstSubcalculation consecutiveSubcalculation*;
+
+firstSubcalculation: generalValue MUL generalValue
+                   | generalValue (PLUS | MIN) generalValue;
+
+consecutiveSubcalculation:  MUL generalValue
+                         | (PLUS | MIN) generalValue;
+
 
 generalValue: variableIdentifier | hardcodedValue;
 
