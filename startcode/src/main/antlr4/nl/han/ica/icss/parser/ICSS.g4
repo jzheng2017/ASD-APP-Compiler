@@ -46,43 +46,45 @@ ASSIGNMENT_OPERATOR: ':=';
 
 //--- PARSER: ---
 
-stylesheet: variable_declaration* style_rule+;
+stylesheet: variableDeclaration* stylerule+;
 
-style_rule: selector OPEN_BRACE style_body CLOSE_BRACE;
-selector: tag_selector | class_selector | id_selector;
+stylerule: selector OPEN_BRACE styleBody CLOSE_BRACE;
+selector: tagSelector | classSelector | idSelector;
 
-style_body: style_body_line+ ;
-style_body_line: style_declaration | if_clause;
+styleBody: styleBodyLine+ ;
+styleBodyLine: styleDeclaration | ifClause;
 
-style_declaration: property_identifier COLON property_value SEMICOLON;
-property_identifier: LOWER_IDENT;
+styleDeclaration: propertyIdentifier COLON propertyValue SEMICOLON;
+propertyIdentifier: LOWER_IDENT;
 
-if_clause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditional_body CLOSE_BRACE else_clause?;
-else_clause: ELSE OPEN_BRACE conditional_body CLOSE_BRACE;
+ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditionalBody CLOSE_BRACE elseClause?;
+elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
-condition: variable_identifier | TRUE | FALSE;
-conditional_body: style_declaration* if_clause*;
+condition: variableIdentifier | TRUE | FALSE;
+conditionalBody: styleDeclaration* ifClause*;
 
-property_value: hardcoded_value | variable_identifier | calculation;
+propertyValue: hardcodedValue | variableIdentifier | calculation;
 
-calculation: sub_calculation+ ;
-sub_calculation: sub_calculation MUL sub_calculation
-                | sub_calculation PLUS sub_calculation
-                | sub_calculation MIN sub_calculation
-                | general_value;
+calculation: subCalculation+ ;
+subCalculation: generalValue MUL generalValue
+                | MUL generalValue
+                | generalValue PLUS generalValue
+                | PLUS generalValue
+                | generalValue MIN generalValue
+                | MIN generalValue;
 
-general_value: variable_identifier | hardcoded_value;
+generalValue: variableIdentifier | hardcodedValue;
 
-hardcoded_value: dimension_size | COLOR | SCALAR;
-dimension_size: PIXELSIZE | PERCENTAGE;
+hardcodedValue: dimensionSize | COLOR | SCALAR;
+dimensionSize: PIXELSIZE | PERCENTAGE;
 
-tag_selector: LOWER_IDENT | CAPITAL_IDENT;
-class_selector: CLASS_IDENT;
-id_selector: ID_IDENT;
+tagSelector: LOWER_IDENT | CAPITAL_IDENT;
+classSelector: CLASS_IDENT;
+idSelector: ID_IDENT;
 
-variable_declaration: variable_identifier ASSIGNMENT_OPERATOR variable_value SEMICOLON;
-variable_identifier: CAPITAL_IDENT;
-variable_value: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
+variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
+variableIdentifier: CAPITAL_IDENT;
+variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
 
 
