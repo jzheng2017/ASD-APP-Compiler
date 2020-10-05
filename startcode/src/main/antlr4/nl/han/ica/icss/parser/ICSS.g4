@@ -65,20 +65,20 @@ conditionalBody: styleDeclaration* ifClause*;
 
 propertyValue: hardcodedPropertyValue | variableReference | calculation;
 
-calculation: firstSubcalculation consecutiveSubcalculation*;
+calculation: firstSubCalculation consecutiveSubCalculation*;
 
-firstSubcalculation: generalValue MUL generalValue
+firstSubCalculation: generalValue MUL generalValue
                    | generalValue (PLUS | MIN) generalValue;
 
-consecutiveSubcalculation:  MUL generalValue
+consecutiveSubCalculation:  MUL generalValue
                          | (PLUS | MIN) generalValue;
 
 
 generalValue: variableReference | hardcodedValue;
 
-hardcodedPropertyValue: hardcodedValue;
+hardcodedPropertyValue: hardcodedValue| COLOR;
 
-hardcodedValue: dimensionSize | COLOR | SCALAR;
+hardcodedValue: dimensionSize | SCALAR;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
 

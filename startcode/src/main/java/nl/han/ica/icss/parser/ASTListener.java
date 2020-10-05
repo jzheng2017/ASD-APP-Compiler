@@ -4,6 +4,9 @@ import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
+import nl.han.ica.icss.ast.operations.AddOperation;
+import nl.han.ica.icss.ast.operations.MultiplyOperation;
+import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.selectors.ClassSelector;
 import nl.han.ica.icss.ast.selectors.IdSelector;
 import nl.han.ica.icss.ast.selectors.TagSelector;
@@ -119,26 +122,6 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
-    public void enterCondition(ICSSParser.ConditionContext ctx) {
-        super.enterCondition(ctx);
-    }
-
-    @Override
-    public void exitCondition(ICSSParser.ConditionContext ctx) {
-        super.exitCondition(ctx);
-    }
-
-    @Override
-    public void enterConditionalBody(ICSSParser.ConditionalBodyContext ctx) {
-        super.enterConditionalBody(ctx);
-    }
-
-    @Override
-    public void exitConditionalBody(ICSSParser.ConditionalBodyContext ctx) {
-        super.exitConditionalBody(ctx);
-    }
-
-    @Override
     public void enterHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
         final String propertyValue = ctx.getChild(0).getText();
 
@@ -163,13 +146,67 @@ public class ASTListener extends ICSSBaseListener {
         super.exitCalculation(ctx);
     }
 
+    @Override
+    public void enterFirstSubCalculation(ICSSParser.FirstSubCalculationContext ctx) {
+        final String operator = ctx.getChild(1).getText();
+
+        this.determineOperatorAndPushToContainer(operator);
+    }
+
+    @Override
+    public void exitFirstSubCalculation(ICSSParser.FirstSubCalculationContext ctx) {
+        Operation currentOperation = (Operation) currentContainer.pop();
+
+        if (currentContainer.peek() instanceof Declaration) {
+            Declaration currentStyleDeclaration = (Declaration) currentContainer.peek();
+            currentStyleDeclaration.addChild(currentOperation);
+        }
+    }
+
+    @Override
+    public void enterConsecutiveSubCalculation(ICSSParser.ConsecutiveSubCalculationContext ctx) {
+        final String operator = ctx.getChild(0).getText();
+
+        if (currentContainer.peek() instanceof Declaration) {
+            //what im about to do is called magic
+            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+            Operation currentOperation = ((Operation) currentDeclaration.expression);
+
+            Operation newRightHandOperation = this.determineOperator(operator);
+
+            newRightHandOperation.addChild(currentOperation.rhs);
+            currentOperation.rhs = newRightHandOperation;
+            currentContainer.push(newRightHandOperation);
+        }
+    }
+
+    @Override
+    public void exitConsecutiveSubCalculation(ICSSParser.ConsecutiveSubCalculationContext ctx) {
+        currentContainer.pop();
+    }
+
+    @Override
+    public void enterHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
+        final String value = ctx.getChild(0).getText();
+
+        this.determineValueAndPushToContainer(value);
+    }
+
+    @Override
+    public void exitHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
+        Literal currentLiteral = (Literal) currentContainer.pop();
+        if (currentContainer.peek() instanceof Operation) {
+            Expression currentExpression = (Expression) currentContainer.peek();
+
+            currentExpression.addChild(currentLiteral);
+        }
+    }
 
     @Override
     public void enterTagSelector(ICSSParser.TagSelectorContext ctx) {
         final String selectorText = ctx.getChild(0).getText();
 
         currentContainer.push(new TagSelector(selectorText));
-
     }
 
     @Override
@@ -247,19 +284,22 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitVariableReference(ICSSParser.VariableReferenceContext ctx) {
-        VariableReference currentVariableIdentifier = (VariableReference) currentContainer.pop();
+        VariableReference currentVariableReference = (VariableReference) currentContainer.pop();
         if (currentContainer.peek() instanceof Declaration) {
             Declaration currentDeclaration = (Declaration) currentContainer.peek();
-            currentDeclaration.addChild(currentVariableIdentifier);
+            currentDeclaration.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof IfClause) {
             IfClause currentIfClause = (IfClause) currentContainer.peek();
-            currentIfClause.addChild(currentVariableIdentifier);
+            currentIfClause.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof ElseClause) {
             ElseClause currentElseClause = (ElseClause) currentContainer.peek();
-            currentElseClause.addChild(currentVariableIdentifier);
+            currentElseClause.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof VariableAssignment) {
             VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
-            currentVariableAssignment.addChild(currentVariableIdentifier);
+            currentVariableAssignment.addChild(currentVariableReference);
+        } else if (currentContainer.peek() instanceof Operation) {
+            Operation currentOperation = (Operation) currentContainer.peek();
+            currentOperation.addChild(currentVariableReference);
         }
     }
 
@@ -282,6 +322,22 @@ public class ASTListener extends ICSSBaseListener {
 
     public AST getAST() {
         return ast;
+    }
+
+    private void determineOperatorAndPushToContainer(final String operator) {
+        currentContainer.push(determineOperator(operator));
+    }
+
+    private Operation determineOperator(final String operator) {
+        if (operator.equals("*")) {
+            return new MultiplyOperation();
+        } else if (operator.equals("+")) {
+            return new AddOperation();
+        } else if (operator.equals("-")) {
+            return new SubtractOperation();
+        }
+
+        throw new IllegalArgumentException();
     }
 
     private void determineValueAndPushToContainer(final String value) {
