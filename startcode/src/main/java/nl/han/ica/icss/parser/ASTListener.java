@@ -3,6 +3,7 @@ package nl.han.ica.icss.parser;
 import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.selectors.ClassSelector;
 import nl.han.ica.icss.ast.selectors.IdSelector;
 import nl.han.ica.icss.ast.selectors.TagSelector;
@@ -59,9 +60,16 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void exitStyleDeclaration(ICSSParser.StyleDeclarationContext ctx) {
         Declaration currentStyleDeclaration = (Declaration) currentContainer.pop();
-        Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
-
-        currentStyleRule.addChild(currentStyleDeclaration);
+        if (currentContainer.peek() instanceof Stylerule) {
+            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+            currentStyleRule.addChild(currentStyleDeclaration);
+        } else if (currentContainer.peek() instanceof IfClause) {
+            IfClause currentIfClause = (IfClause) currentContainer.peek();
+            currentIfClause.addChild(currentStyleDeclaration);
+        } else if (currentContainer.peek() instanceof ElseClause) {
+            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
+            currentElseClause.addChild(currentStyleDeclaration);
+        }
     }
 
     @Override
@@ -82,22 +90,32 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterIfClause(ICSSParser.IfClauseContext ctx) {
-        super.enterIfClause(ctx);
+        currentContainer.push(new IfClause());
     }
 
     @Override
     public void exitIfClause(ICSSParser.IfClauseContext ctx) {
-        super.exitIfClause(ctx);
+        IfClause currentIfClause = (IfClause) currentContainer.pop();
+        if (currentContainer.peek() instanceof Stylerule) {
+            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+            currentStyleRule.addChild(currentIfClause);
+        } else if (currentContainer.peek() instanceof IfClause) {
+            IfClause parentIfClause = (IfClause) currentContainer.peek();
+            parentIfClause.addChild(currentIfClause);
+        }
     }
 
     @Override
     public void enterElseClause(ICSSParser.ElseClauseContext ctx) {
-        super.enterElseClause(ctx);
+        currentContainer.push(new ElseClause());
     }
 
     @Override
     public void exitElseClause(ICSSParser.ElseClauseContext ctx) {
-        super.exitElseClause(ctx);
+        ElseClause currentElseClause = (ElseClause) currentContainer.pop();
+        IfClause currentIfClause = (IfClause) currentContainer.peek();
+
+        currentIfClause.addChild(currentElseClause);
     }
 
     @Override
@@ -121,13 +139,18 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
-    public void enterPropertyValue(ICSSParser.PropertyValueContext ctx) {
-        super.enterPropertyValue(ctx);
+    public void enterHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
+        final String propertyValue = ctx.getChild(0).getText();
+
+        this.determineValueAndPushToContainer(propertyValue);
     }
 
     @Override
-    public void exitPropertyValue(ICSSParser.PropertyValueContext ctx) {
-        super.exitPropertyValue(ctx);
+    public void exitHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
+        Literal currentLiteral = (Literal) currentContainer.pop();
+        Declaration currentDeclaration = (Declaration) currentContainer.peek();
+
+        currentDeclaration.addChild(currentLiteral);
     }
 
     @Override
@@ -140,36 +163,6 @@ public class ASTListener extends ICSSBaseListener {
         super.exitCalculation(ctx);
     }
 
-
-    @Override
-    public void enterGeneralValue(ICSSParser.GeneralValueContext ctx) {
-        super.enterGeneralValue(ctx);
-    }
-
-    @Override
-    public void exitGeneralValue(ICSSParser.GeneralValueContext ctx) {
-        super.exitGeneralValue(ctx);
-    }
-
-    @Override
-    public void enterHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
-        super.enterHardcodedValue(ctx);
-    }
-
-    @Override
-    public void exitHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
-        super.exitHardcodedValue(ctx);
-    }
-
-    @Override
-    public void enterDimensionSize(ICSSParser.DimensionSizeContext ctx) {
-        super.enterDimensionSize(ctx);
-    }
-
-    @Override
-    public void exitDimensionSize(ICSSParser.DimensionSizeContext ctx) {
-        super.exitDimensionSize(ctx);
-    }
 
     @Override
     public void enterTagSelector(ICSSParser.TagSelectorContext ctx) {
@@ -219,36 +212,100 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterVariableDeclaration(ICSSParser.VariableDeclarationContext ctx) {
-        super.enterVariableDeclaration(ctx);
+        currentContainer.push(new VariableAssignment());
     }
 
     @Override
     public void exitVariableDeclaration(ICSSParser.VariableDeclarationContext ctx) {
-        super.exitVariableDeclaration(ctx);
+        VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.pop();
+        Stylesheet currentStylesheet = (Stylesheet) currentContainer.peek();
+
+        currentStylesheet.addChild(currentVariableDeclaration);
     }
 
     @Override
     public void enterVariableIdentifier(ICSSParser.VariableIdentifierContext ctx) {
-        super.enterVariableIdentifier(ctx);
+        final String variableName = ctx.getChild(0).getText();
+
+        currentContainer.push(new VariableReference(variableName));
     }
 
     @Override
     public void exitVariableIdentifier(ICSSParser.VariableIdentifierContext ctx) {
-        super.exitVariableIdentifier(ctx);
+        VariableReference currentVariableIdentifier = (VariableReference) currentContainer.pop();
+        VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.peek();
+
+        currentVariableDeclaration.addChild(currentVariableIdentifier);
     }
 
     @Override
+    public void enterVariableReference(ICSSParser.VariableReferenceContext ctx) {
+        final String variableName = ctx.getChild(0).getText();
+
+        currentContainer.push(new VariableReference(variableName));
+    }
+
+    @Override
+    public void exitVariableReference(ICSSParser.VariableReferenceContext ctx) {
+        VariableReference currentVariableIdentifier = (VariableReference) currentContainer.pop();
+        if (currentContainer.peek() instanceof Declaration) {
+            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+            currentDeclaration.addChild(currentVariableIdentifier);
+        } else if (currentContainer.peek() instanceof IfClause) {
+            IfClause currentIfClause = (IfClause) currentContainer.peek();
+            currentIfClause.addChild(currentVariableIdentifier);
+        } else if (currentContainer.peek() instanceof ElseClause) {
+            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
+            currentElseClause.addChild(currentVariableIdentifier);
+        } else if (currentContainer.peek() instanceof VariableAssignment) {
+            VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
+            currentVariableAssignment.addChild(currentVariableIdentifier);
+        }
+    }
+
+
+    @Override
     public void enterVariableValue(ICSSParser.VariableValueContext ctx) {
-        super.enterVariableValue(ctx);
+        final String variableValue = ctx.getChild(0).getText();
+        this.determineValueAndPushToContainer(variableValue);
     }
 
     @Override
     public void exitVariableValue(ICSSParser.VariableValueContext ctx) {
-        super.exitVariableValue(ctx);
+        if (currentContainer.peek() instanceof Literal) {
+            Literal currentVariableValue = (Literal) currentContainer.pop();
+            VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.peek();
+
+            currentVariableDeclaration.addChild(currentVariableValue);
+        }
     }
 
     public AST getAST() {
         return ast;
     }
 
+    private void determineValueAndPushToContainer(final String value) {
+        if (value.startsWith("#")) {
+            currentContainer.push(new ColorLiteral(value));
+        } else if (value.endsWith("%")) {
+            currentContainer.push(new PercentageLiteral(value));
+        } else if (value.endsWith("px")) {
+            currentContainer.push(new PixelLiteral(value));
+        } else if (value.equals("TRUE") || value.equals("FALSE")) {
+            currentContainer.push(new BoolLiteral(value));
+        } else if (isPositiveNumber(value)) {
+            currentContainer.push(new ScalarLiteral(value));
+        }
+    }
+
+    private boolean isPositiveNumber(String value) {
+        try {
+            if (Integer.parseInt(value) >= 0) {
+                return true;
+            }
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+        return false;
+    }
 }
