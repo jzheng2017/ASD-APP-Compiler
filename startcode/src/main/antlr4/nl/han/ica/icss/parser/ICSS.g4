@@ -66,7 +66,7 @@ ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditional
 elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
 condition: variableReference | TRUE | FALSE;
-conditionalBody: styleDeclaration* ifClause*;
+conditionalBody: variableDeclaration* styleDeclaration* ifClause*;
 
 propertyValue: hardcodedPropertyValue | variableReference | calculation;
 
