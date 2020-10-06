@@ -252,6 +252,12 @@ public class ASTListener extends ICSSBaseListener {
         } else if (currentContainer.peek() instanceof Stylerule) {
             Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
             currentStyleRule.addChild(currentVariableDeclaration);
+        } else if (currentContainer.peek() instanceof IfClause) {
+            IfClause currentIfClause = (IfClause) currentContainer.peek();
+            currentIfClause.addChild(currentVariableDeclaration);
+        } else if (currentContainer.peek() instanceof ElseClause) {
+            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
+            currentElseClause.addChild(currentVariableDeclaration);
         }
     }
 
