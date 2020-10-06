@@ -87,7 +87,7 @@ hardcodedValue: dimensionSize | SCALAR;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
 
-tagSelector: LOWER_IDENT | CAPITAL_IDENT;
+tagSelector: LOWER_IDENT;
 classSelector: CLASS_IDENT;
 idSelector: ID_IDENT;
 
