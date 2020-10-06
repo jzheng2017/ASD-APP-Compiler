@@ -48,11 +48,16 @@ ASSIGNMENT_OPERATOR: ':=';
 
 stylesheet: variableDeclaration* stylerule+;
 
+variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
+variableReference: CAPITAL_IDENT;
+variableIdentifier: CAPITAL_IDENT;
+variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference;
+
 stylerule: selector OPEN_BRACE styleBody CLOSE_BRACE;
 selector: tagSelector | classSelector | idSelector;
 
 styleBody: styleBodyLine+ ;
-styleBodyLine: styleDeclaration | ifClause;
+styleBodyLine: styleDeclaration | ifClause | variableDeclaration;
 
 styleDeclaration: propertyIdentifier COLON propertyValue SEMICOLON;
 propertyIdentifier: LOWER_IDENT;
@@ -86,10 +91,7 @@ tagSelector: LOWER_IDENT | CAPITAL_IDENT;
 classSelector: CLASS_IDENT;
 idSelector: ID_IDENT;
 
-variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
-variableReference: CAPITAL_IDENT;
-variableIdentifier: CAPITAL_IDENT;
-variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference;
+
 
 
 

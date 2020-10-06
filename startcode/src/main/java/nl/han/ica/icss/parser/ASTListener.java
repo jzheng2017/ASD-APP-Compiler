@@ -137,16 +137,6 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
-    public void enterCalculation(ICSSParser.CalculationContext ctx) {
-        super.enterCalculation(ctx);
-    }
-
-    @Override
-    public void exitCalculation(ICSSParser.CalculationContext ctx) {
-        super.exitCalculation(ctx);
-    }
-
-    @Override
     public void enterFirstSubCalculation(ICSSParser.FirstSubCalculationContext ctx) {
         final String operator = ctx.getChild(1).getText();
 
@@ -255,9 +245,14 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void exitVariableDeclaration(ICSSParser.VariableDeclarationContext ctx) {
         VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.pop();
-        Stylesheet currentStylesheet = (Stylesheet) currentContainer.peek();
 
-        currentStylesheet.addChild(currentVariableDeclaration);
+        if (currentContainer.peek() instanceof Stylesheet) {
+            Stylesheet currentStylesheet = (Stylesheet) currentContainer.peek();
+            currentStylesheet.addChild(currentVariableDeclaration);
+        } else if (currentContainer.peek() instanceof Stylerule) {
+            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+            currentStyleRule.addChild(currentVariableDeclaration);
+        }
     }
 
     @Override
