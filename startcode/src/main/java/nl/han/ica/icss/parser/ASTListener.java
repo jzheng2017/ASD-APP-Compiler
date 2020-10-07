@@ -121,20 +121,10 @@ public class ASTListener extends ICSSBaseListener {
         currentIfClause.addChild(currentElseClause);
     }
 
-    @Override
-    public void enterHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
-        final String propertyValue = ctx.getChild(0).getText();
-
-        this.determineValueAndPushToContainer(propertyValue);
-    }
-
-    @Override
-    public void exitHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
-        Literal currentLiteral = (Literal) currentContainer.pop();
-        Declaration currentDeclaration = (Declaration) currentContainer.peek();
-
-        currentDeclaration.addChild(currentLiteral);
-    }
+//    @Override
+//    public void exitHardcodedPropertyValue(ICSSParser.HardcodedPropertyValueContext ctx) {
+//
+//    }
 
     @Override
     public void exitSubCalculation(ICSSParser.SubCalculationContext ctx) {
@@ -155,7 +145,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitCalculation(ICSSParser.CalculationContext ctx) {
-        Operation parentOperation = (Operation) currentContainer.pop();
+        Expression parentOperation = (Expression) currentContainer.pop();
 
         if (currentContainer.peek() instanceof Declaration) {
             Declaration currentDeclaration = (Declaration) currentContainer.peek();
@@ -178,12 +168,21 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
-//        Literal currentLiteral = (Literal) currentContainer.pop();
-//        if (currentContainer.peek() instanceof Operation) {
-//            Expression currentExpression = (Expression) currentContainer.peek();
-//
-//            currentExpression.addChild(currentLiteral);
-//        }
+        if (isChildOfSubCalculation(ctx)) {
+            return;
+        }
+
+        Literal currentLiteral = (Literal) currentContainer.pop();
+        
+        if (currentContainer.peek() instanceof Expression) {
+            Expression currentExpression = (Expression) currentContainer.peek();
+
+            currentExpression.addChild(currentLiteral);
+        } else if (currentContainer.peek() instanceof Declaration) {
+            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+
+            currentDeclaration.addChild(currentLiteral);
+        }
     }
 
     @Override
@@ -279,7 +278,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitVariableReference(ICSSParser.VariableReferenceContext ctx) {
-        if (isChildOfSubCalculation(ctx)){
+        if (isChildOfSubCalculation(ctx)) {
             return;
         }
 
@@ -297,10 +296,6 @@ public class ASTListener extends ICSSBaseListener {
             VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
             currentVariableAssignment.addChild(currentVariableReference);
         }
-//        else if (currentContainer.peek() instanceof Operation) {
-//            Operation currentOperation = (Operation) currentContainer.peek();
-//            currentOperation.addChild(currentVariableReference);
-//        }
     }
 
 
@@ -371,7 +366,10 @@ public class ASTListener extends ICSSBaseListener {
         return false;
     }
 
-    private boolean isChildOfSubCalculation(ICSSParser.VariableReferenceContext ctx){
+    private boolean isChildOfSubCalculation(ICSSParser.VariableReferenceContext ctx) {
+        return ctx.parent.parent instanceof ICSSParser.SubCalculationContext;
+    }
+    private boolean isChildOfSubCalculation(ICSSParser.HardcodedValueContext ctx) {
         return ctx.parent.parent instanceof ICSSParser.SubCalculationContext;
     }
 }
