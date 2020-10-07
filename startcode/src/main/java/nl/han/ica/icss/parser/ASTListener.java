@@ -137,43 +137,37 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
-    public void enterFirstSubCalculation(ICSSParser.FirstSubCalculationContext ctx) {
-        final String operator = ctx.getChild(1).getText();
+    public void exitSubCalculation(ICSSParser.SubCalculationContext ctx) {
+        if (ctx.getChildCount() == 0) {
+            Literal literal = this.determineValue(ctx.getChild(0).getText());
+            currentContainer.push(literal);
+        }
 
-        this.determineOperatorAndPushToContainer(operator);
-    }
+        if (ctx.getChildCount() == 3) {
+            Operation operation = this.determineOperator(ctx.getChild(1).getText());
 
-    @Override
-    public void exitFirstSubCalculation(ICSSParser.FirstSubCalculationContext ctx) {
-        Operation currentOperation = (Operation) currentContainer.pop();
+            operation.rhs = (Expression) currentContainer.pop();
+            operation.lhs = (Expression) currentContainer.pop();
 
-        if (currentContainer.peek() instanceof Declaration) {
-            Declaration currentStyleDeclaration = (Declaration) currentContainer.peek();
-            currentStyleDeclaration.addChild(currentOperation);
+            currentContainer.push(operation);
         }
     }
 
     @Override
-    public void enterConsecutiveSubCalculation(ICSSParser.ConsecutiveSubCalculationContext ctx) {
-        final String operator = ctx.getChild(0).getText();
+    public void exitCalculation(ICSSParser.CalculationContext ctx) {
+        Operation parentOperation = (Operation) currentContainer.pop();
 
         if (currentContainer.peek() instanceof Declaration) {
-            //what im about to do is called magic
             Declaration currentDeclaration = (Declaration) currentContainer.peek();
-            Operation currentOperation = ((Operation) currentDeclaration.expression);
 
-            Operation newRightHandOperation = this.determineOperator(operator);
+            currentDeclaration.addChild(parentOperation);
+        } else if (currentContainer.peek() instanceof VariableAssignment) {
+            VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
 
-            newRightHandOperation.addChild(currentOperation.rhs);
-            currentOperation.rhs = newRightHandOperation;
-            currentContainer.push(newRightHandOperation);
+            currentVariableAssignment.addChild(parentOperation);
         }
     }
 
-    @Override
-    public void exitConsecutiveSubCalculation(ICSSParser.ConsecutiveSubCalculationContext ctx) {
-        currentContainer.pop();
-    }
 
     @Override
     public void enterHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
@@ -184,12 +178,12 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
-        Literal currentLiteral = (Literal) currentContainer.pop();
-        if (currentContainer.peek() instanceof Operation) {
-            Expression currentExpression = (Expression) currentContainer.peek();
-
-            currentExpression.addChild(currentLiteral);
-        }
+//        Literal currentLiteral = (Literal) currentContainer.pop();
+//        if (currentContainer.peek() instanceof Operation) {
+//            Expression currentExpression = (Expression) currentContainer.peek();
+//
+//            currentExpression.addChild(currentLiteral);
+//        }
     }
 
     @Override
@@ -285,6 +279,10 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitVariableReference(ICSSParser.VariableReferenceContext ctx) {
+        if (isChildOfSubCalculation(ctx)){
+            return;
+        }
+
         VariableReference currentVariableReference = (VariableReference) currentContainer.pop();
         if (currentContainer.peek() instanceof Declaration) {
             Declaration currentDeclaration = (Declaration) currentContainer.peek();
@@ -298,10 +296,11 @@ public class ASTListener extends ICSSBaseListener {
         } else if (currentContainer.peek() instanceof VariableAssignment) {
             VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
             currentVariableAssignment.addChild(currentVariableReference);
-        } else if (currentContainer.peek() instanceof Operation) {
-            Operation currentOperation = (Operation) currentContainer.peek();
-            currentOperation.addChild(currentVariableReference);
         }
+//        else if (currentContainer.peek() instanceof Operation) {
+//            Operation currentOperation = (Operation) currentContainer.peek();
+//            currentOperation.addChild(currentVariableReference);
+//        }
     }
 
 
@@ -338,21 +337,27 @@ public class ASTListener extends ICSSBaseListener {
             return new SubtractOperation();
         }
 
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("No matching operator found!");
     }
 
     private void determineValueAndPushToContainer(final String value) {
+        currentContainer.push(determineValue(value));
+    }
+
+    private Literal determineValue(final String value) {
         if (value.startsWith("#")) {
-            currentContainer.push(new ColorLiteral(value));
+            return new ColorLiteral(value);
         } else if (value.endsWith("%")) {
-            currentContainer.push(new PercentageLiteral(value));
+            return new PercentageLiteral(value);
         } else if (value.endsWith("px")) {
-            currentContainer.push(new PixelLiteral(value));
+            return new PixelLiteral(value);
         } else if (value.equals("TRUE") || value.equals("FALSE")) {
-            currentContainer.push(new BoolLiteral(value));
+            return new BoolLiteral(value);
         } else if (isPositiveNumber(value)) {
-            currentContainer.push(new ScalarLiteral(value));
+            return new ScalarLiteral(value);
         }
+
+        throw new IllegalArgumentException("No matching literal found!");
     }
 
     private boolean isPositiveNumber(String value) {
@@ -364,5 +369,9 @@ public class ASTListener extends ICSSBaseListener {
             return false;
         }
         return false;
+    }
+
+    private boolean isChildOfSubCalculation(ICSSParser.VariableReferenceContext ctx){
+        return ctx.parent.parent instanceof ICSSParser.SubCalculationContext;
     }
 }

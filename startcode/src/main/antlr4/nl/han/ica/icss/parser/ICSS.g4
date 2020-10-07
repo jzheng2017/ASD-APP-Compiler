@@ -41,17 +41,14 @@ MIN: '-';
 MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
-
-
-
 //--- PARSER: ---
 
-stylesheet: variableDeclaration* stylerule+;
+stylesheet: variableDeclaration* stylerule+ | EOF;
 
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference;
+variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference | calculation;
 
 stylerule: selector OPEN_BRACE styleBody CLOSE_BRACE;
 selector: tagSelector | classSelector | idSelector;
@@ -68,20 +65,17 @@ elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 condition: variableReference | TRUE | FALSE;
 conditionalBody: variableDeclaration* styleDeclaration* ifClause*;
 
-propertyValue: hardcodedPropertyValue | variableReference | calculation;
+propertyValue: hardcodedPropertyValue | calculation | variableReference;
 
-calculation: firstSubCalculation consecutiveSubCalculation*;
+calculation: subCalculation;
 
-firstSubCalculation: generalValue MUL generalValue
-                   | generalValue (PLUS | MIN) generalValue;
-
-consecutiveSubCalculation:  MUL generalValue
-                         | (PLUS | MIN) generalValue;
-
+subCalculation: subCalculation MUL subCalculation
+              | subCalculation (PLUS | MIN) subCalculation
+              | generalValue;
 
 generalValue: variableReference | hardcodedValue;
 
-hardcodedPropertyValue: hardcodedValue| COLOR;
+hardcodedPropertyValue: hardcodedValue | COLOR;
 
 hardcodedValue: dimensionSize | SCALAR;
 
