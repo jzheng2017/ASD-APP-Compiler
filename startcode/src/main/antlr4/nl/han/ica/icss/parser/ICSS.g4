@@ -48,7 +48,9 @@ stylesheet: variableDeclaration* stylerule+ | EOF;
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR | variableReference | calculation;
+variableValue: calculation | variableReference | variableHardcodedValue;
+
+variableHardcodedValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
 stylerule: selector OPEN_BRACE styleBody CLOSE_BRACE;
 selector: tagSelector | classSelector | idSelector;

@@ -297,15 +297,14 @@ public class ASTListener extends ICSSBaseListener {
         }
     }
 
-
     @Override
-    public void enterVariableValue(ICSSParser.VariableValueContext ctx) {
+    public void enterVariableHardcodedValue(ICSSParser.VariableHardcodedValueContext ctx) {
         final String variableValue = ctx.getChild(0).getText();
         this.determineValueAndPushToContainer(variableValue);
     }
 
     @Override
-    public void exitVariableValue(ICSSParser.VariableValueContext ctx) {
+    public void exitVariableHardcodedValue(ICSSParser.VariableHardcodedValueContext ctx) {
         if (currentContainer.peek() instanceof Expression) {
             Expression currentVariableValue = (Expression) currentContainer.pop();
             VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.peek();
@@ -349,7 +348,7 @@ public class ASTListener extends ICSSBaseListener {
             return new BoolLiteral(value);
         } else if (isPositiveNumber(value)) {
             return new ScalarLiteral(value);
-        } else if (isAllCharacters(value)){
+        } else if (isAllCharacters(value)) {
             return new VariableReference(value);
         }
 
@@ -360,7 +359,7 @@ public class ASTListener extends ICSSBaseListener {
         char[] chars = value.toCharArray();
 
         for (char c : chars) {
-            if(!Character.isLetter(c)) {
+            if (!Character.isLetter(c)) {
                 return false;
             }
         }

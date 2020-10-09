@@ -12,11 +12,9 @@ import java.util.*;
 
 public class Checker {
     private LinkedList<HashMap<String, ExpressionType>> variableTypes;
-    private LinkedList<ScopeTypes> scopeTypes = new LinkedList<>();
 
     public void check(AST ast) {
         variableTypes = new LinkedList<>();
-        scopeTypes = new LinkedList<>();
         checkStylesheet(ast.root);
     }
 
@@ -27,34 +25,32 @@ public class Checker {
     private void checkChildren(ASTNode currentNode) {
         List<ASTNode> children = currentNode.getChildren();
 
-        generateScope(currentNode);
-        scanVariables(currentNode);
+        final boolean scopeCreated = generateScope(currentNode);
+        registerVariables(currentNode);
         checkScope(currentNode);
         checkSemantic(currentNode);
 
         children.forEach(this::checkChildren);
 
-        removeScope(currentNode);
-    }
-
-    private void removeScope(ASTNode currentNode) {
-        if (determineScopeType(currentNode) != null) {
+        if (scopeCreated) {
             variableTypes.removeLast();
         }
+
     }
 
-    private void generateScope(ASTNode currentNode) {
+    private boolean generateScope(ASTNode currentNode) {
         if (currentNode instanceof Stylesheet
                 || currentNode instanceof Stylerule
                 || currentNode instanceof IfClause
                 || currentNode instanceof ElseClause) {
             HashMap<String, ExpressionType> currentScope = new HashMap<>();
             variableTypes.add(currentScope);
-            scopeTypes.add(determineScopeType(currentNode));
+            return true;
         }
+        return false;
     }
 
-    private void scanVariables(ASTNode currentNode) {
+    private void registerVariables(ASTNode currentNode) {
         if (currentNode instanceof VariableAssignment) {
             HashMap<String, ExpressionType> currentScope = variableTypes.getLast();
             String variableName = ((VariableAssignment) currentNode).name.name;
@@ -200,20 +196,6 @@ public class Checker {
             if (expressionTypeDetermined) {
                 return expressionType;
             }
-        }
-
-        throw new IllegalArgumentException("Variable not in scope!");
-    }
-
-    private ScopeTypes determineScopeType(ASTNode currentNode) {
-        if (currentNode instanceof Stylesheet) {
-            return ScopeTypes.STYLESHEET;
-        } else if (currentNode instanceof Stylerule) {
-            return ScopeTypes.STYLE_RULE;
-        } else if (currentNode instanceof IfClause) {
-            return ScopeTypes.IF;
-        } else if (currentNode instanceof ElseClause) {
-            return ScopeTypes.ELSE;
         }
 
         return null;
