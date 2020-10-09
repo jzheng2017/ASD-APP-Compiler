@@ -61,26 +61,38 @@ public class Checker {
 
     private void checkSemantic(ASTNode currentNode) {
         if (currentNode instanceof Operation) {
-            if (!isOperationAllowed((Operation) currentNode)) {
-                currentNode.setError("Illegal operation");
-            }
+            checkOperationSemantic(currentNode);
         } else if (currentNode instanceof Declaration) {
-            final String propertyName = ((Declaration) currentNode).property.name;
-
-            if (isPropertyIllegal(propertyName)) {
-                currentNode.setError(String.format("%s is not a legal property name!", propertyName));
-            }
-
-            if (!isPropertyValueTypeAllowed(currentNode)) {
-                currentNode.setError(String.format("%s has an illegal value type or expression!", propertyName));
-            }
+            checkDeclarationSemantic(currentNode);
         } else if (currentNode instanceof IfClause) {
-            final Expression conditionalExpression = ((IfClause) currentNode).conditionalExpression;
-            final ExpressionType expressionType = determineExpressionType(conditionalExpression);
+            checkIfClauseSemantic(currentNode);
+        }
+    }
 
-            if (expressionType != ExpressionType.BOOL) {
-                currentNode.setError(String.format("Expected type: %s. Actual type: %s", ExpressionType.BOOL, expressionType));
-            }
+    private void checkOperationSemantic(ASTNode currentNode) {
+        if (!isOperationAllowed((Operation) currentNode)) {
+            currentNode.setError("Illegal operation");
+        }
+    }
+
+    private void checkDeclarationSemantic(ASTNode currentNode) {
+        final String propertyName = ((Declaration) currentNode).property.name;
+
+        if (isPropertyIllegal(propertyName)) {
+            currentNode.setError(String.format("%s is not a legal property name!", propertyName));
+        }
+
+        if (!isPropertyValueTypeAllowed(currentNode)) {
+            currentNode.setError(String.format("%s has an illegal value type or expression!", propertyName));
+        }
+    }
+
+    private void checkIfClauseSemantic(ASTNode currentNode) {
+        final Expression conditionalExpression = ((IfClause) currentNode).conditionalExpression;
+        final ExpressionType expressionType = determineExpressionType(conditionalExpression);
+
+        if (expressionType != ExpressionType.BOOL) {
+            currentNode.setError(String.format("Expected type: %s. Actual type: %s", ExpressionType.BOOL, expressionType));
         }
     }
 
