@@ -95,20 +95,22 @@ public class Checker {
         final Expression expression = ((Declaration) currentNode).expression;
         ExpressionType propertyExpressionType = determineExpressionType(((Declaration) currentNode).expression);
 
+        final boolean isExpression = propertyExpressionType == ExpressionType.UNDEFINED;
+
         if (propertyName.equals("background-color") || propertyName.equals("color")) {
-            if (propertyExpressionType == ExpressionType.UNDEFINED) {
+            if (isExpression) {
                 if (expression instanceof VariableReference) {
-                    final String variableName = ((VariableReference) expression).name;
-                    propertyExpressionType = getVariableExpressionType(variableName);
+                    propertyExpressionType = getExpressionType(expression);
+                } else if (expression instanceof Operation) {
+                    return isOperationAllowed((Operation) expression);
                 }
             }
 
             return propertyExpressionType == ExpressionType.COLOR;
         } else {
-            if (propertyExpressionType == ExpressionType.UNDEFINED) {
+            if (isExpression) {
                 if (expression instanceof VariableReference) {
-                    final String variableName = ((VariableReference) expression).name;
-                    propertyExpressionType = getVariableExpressionType(variableName);
+                    propertyExpressionType = getExpressionType(expression);
                 } else if (expression instanceof Operation) {
                     return isOperationAllowed((Operation) expression);
                 }
@@ -116,9 +118,11 @@ public class Checker {
             return propertyExpressionType == ExpressionType.PERCENTAGE
                     || propertyExpressionType == ExpressionType.PIXEL;
         }
+    }
 
-
-//        throw new IllegalArgumentException("Something went wrong with checking the value type!");
+    private ExpressionType getExpressionType(Expression expression) {
+        final String variableName = ((VariableReference) expression).name;
+        return getVariableExpressionType(variableName);
     }
 
     private boolean isOperationAllowed(Operation operation) {
@@ -133,10 +137,18 @@ public class Checker {
             return isOperationAllowed((Operation) right);
         }
 
+
+        return evaluateOperation(operation);
+    }
+
+    private boolean evaluateOperation(Operation operation) {
+        Expression left = operation.lhs;
+        Expression right = operation.rhs;
+
         ExpressionType leftExpressionType = determineExpressionType(left);
         ExpressionType rightExpressionType = determineExpressionType(right);
 
-        if (left instanceof ColorLiteral || right instanceof ColorLiteral) { //operation can not contain a color literal
+        if (leftExpressionType == ExpressionType.COLOR || rightExpressionType == ExpressionType.COLOR) { //operation can not contain a color literal
             return false;
         } else {
             boolean isAddOrSubtract = operation instanceof AddOperation || operation instanceof SubtractOperation;
