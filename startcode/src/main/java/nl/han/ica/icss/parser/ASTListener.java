@@ -48,9 +48,9 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitStylerule(ICSSParser.StyleruleContext ctx) {
-        Stylerule currentStyleRule = (Stylerule) currentContainer.pop();
+        ASTNode currentStyleRule = currentContainer.pop();
 
-        Stylesheet stylesheet = (Stylesheet) currentContainer.peek();
+        ASTNode stylesheet = currentContainer.peek();
 
         stylesheet.addChild(currentStyleRule);
     }
@@ -62,15 +62,15 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitStyleDeclaration(ICSSParser.StyleDeclarationContext ctx) {
-        Declaration currentStyleDeclaration = (Declaration) currentContainer.pop();
+        ASTNode currentStyleDeclaration = currentContainer.pop();
         if (currentContainer.peek() instanceof Stylerule) {
-            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+            ASTNode currentStyleRule = currentContainer.peek();
             currentStyleRule.addChild(currentStyleDeclaration);
         } else if (currentContainer.peek() instanceof IfClause) {
-            IfClause currentIfClause = (IfClause) currentContainer.peek();
+            ASTNode currentIfClause = currentContainer.peek();
             currentIfClause.addChild(currentStyleDeclaration);
         } else if (currentContainer.peek() instanceof ElseClause) {
-            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
+            ASTNode currentElseClause = currentContainer.peek();
             currentElseClause.addChild(currentStyleDeclaration);
         }
     }
@@ -84,9 +84,9 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitPropertyIdentifier(ICSSParser.PropertyIdentifierContext ctx) {
-        PropertyName currentPropertyName = (PropertyName) currentContainer.pop();
+        ASTNode currentPropertyName = currentContainer.pop();
 
-        Declaration currentStyleDeclaration = (Declaration) currentContainer.peek();
+        ASTNode currentStyleDeclaration = currentContainer.peek();
 
         currentStyleDeclaration.addChild(currentPropertyName);
     }
@@ -98,12 +98,12 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitIfClause(ICSSParser.IfClauseContext ctx) {
-        IfClause currentIfClause = (IfClause) currentContainer.pop();
+        ASTNode currentIfClause = currentContainer.pop();
         if (currentContainer.peek() instanceof Stylerule) {
-            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+            ASTNode currentStyleRule = currentContainer.peek();
             currentStyleRule.addChild(currentIfClause);
         } else if (currentContainer.peek() instanceof IfClause) {
-            IfClause parentIfClause = (IfClause) currentContainer.peek();
+            ASTNode parentIfClause = currentContainer.peek();
             parentIfClause.addChild(currentIfClause);
         }
     }
@@ -115,8 +115,8 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitElseClause(ICSSParser.ElseClauseContext ctx) {
-        ElseClause currentElseClause = (ElseClause) currentContainer.pop();
-        IfClause currentIfClause = (IfClause) currentContainer.peek();
+        ASTNode currentElseClause = currentContainer.pop();
+        ASTNode currentIfClause = currentContainer.peek();
 
         currentIfClause.addChild(currentElseClause);
     }
@@ -144,14 +144,14 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitCalculation(ICSSParser.CalculationContext ctx) {
-        Expression parentOperation = (Expression) currentContainer.pop();
+        ASTNode parentOperation = currentContainer.pop();
 
         if (currentContainer.peek() instanceof Declaration) {
-            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+            ASTNode currentDeclaration = currentContainer.peek();
 
             currentDeclaration.addChild(parentOperation);
         } else if (currentContainer.peek() instanceof VariableAssignment) {
-            VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
+            ASTNode currentVariableAssignment = currentContainer.peek();
 
             currentVariableAssignment.addChild(parentOperation);
         }
@@ -171,14 +171,14 @@ public class ASTListener extends ICSSBaseListener {
             return;
         }
 
-        Literal currentLiteral = (Literal) currentContainer.pop();
+        ASTNode currentLiteral = currentContainer.pop();
 
         if (currentContainer.peek() instanceof Expression) {
-            Expression currentExpression = (Expression) currentContainer.peek();
+            ASTNode currentExpression = currentContainer.peek();
 
             currentExpression.addChild(currentLiteral);
         } else if (currentContainer.peek() instanceof Declaration) {
-            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+            ASTNode currentDeclaration = currentContainer.peek();
 
             currentDeclaration.addChild(currentLiteral);
         }
@@ -193,10 +193,10 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitTagSelector(ICSSParser.TagSelectorContext ctx) {
-        TagSelector currentSelector = (TagSelector) currentContainer.pop();
-        Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+        ASTNode currentTagSelector = currentContainer.pop();
+        ASTNode currentStyleRule = currentContainer.peek();
 
-        currentStyleRule.addChild(currentSelector);
+        currentStyleRule.addChild(currentTagSelector);
     }
 
     @Override
@@ -209,10 +209,10 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitClassSelector(ICSSParser.ClassSelectorContext ctx) {
-        ClassSelector currentSelector = (ClassSelector) currentContainer.pop();
-        Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+        ASTNode currentClassSelector = currentContainer.pop();
+        ASTNode currentStyleRule = currentContainer.peek();
 
-        currentStyleRule.addChild(currentSelector);
+        currentStyleRule.addChild(currentClassSelector);
     }
 
     @Override
@@ -223,10 +223,10 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitIdSelector(ICSSParser.IdSelectorContext ctx) {
-        IdSelector currentSelector = (IdSelector) currentContainer.pop();
-        Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
+        ASTNode currentIdSelector = currentContainer.pop();
+        ASTNode currentStyleRule = currentContainer.peek();
 
-        currentStyleRule.addChild(currentSelector);
+        currentStyleRule.addChild(currentIdSelector);
     }
 
     @Override
@@ -236,20 +236,20 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitVariableDeclaration(ICSSParser.VariableDeclarationContext ctx) {
-        VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.pop();
+        ASTNode currentVariableAssignment = currentContainer.pop();
 
         if (currentContainer.peek() instanceof Stylesheet) {
-            Stylesheet currentStylesheet = (Stylesheet) currentContainer.peek();
-            currentStylesheet.addChild(currentVariableDeclaration);
+            ASTNode currentStylesheet = currentContainer.peek();
+            currentStylesheet.addChild(currentVariableAssignment);
         } else if (currentContainer.peek() instanceof Stylerule) {
-            Stylerule currentStyleRule = (Stylerule) currentContainer.peek();
-            currentStyleRule.addChild(currentVariableDeclaration);
+            ASTNode currentStyleRule = currentContainer.peek();
+            currentStyleRule.addChild(currentVariableAssignment);
         } else if (currentContainer.peek() instanceof IfClause) {
-            IfClause currentIfClause = (IfClause) currentContainer.peek();
-            currentIfClause.addChild(currentVariableDeclaration);
+            ASTNode currentIfClause = currentContainer.peek();
+            currentIfClause.addChild(currentVariableAssignment);
         } else if (currentContainer.peek() instanceof ElseClause) {
-            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
-            currentElseClause.addChild(currentVariableDeclaration);
+            ASTNode currentElseClause = currentContainer.peek();
+            currentElseClause.addChild(currentVariableAssignment);
         }
     }
 
@@ -262,8 +262,8 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitVariableIdentifier(ICSSParser.VariableIdentifierContext ctx) {
-        VariableReference currentVariableIdentifier = (VariableReference) currentContainer.pop();
-        VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.peek();
+        ASTNode currentVariableIdentifier = currentContainer.pop();
+        ASTNode currentVariableDeclaration = currentContainer.peek();
 
         currentVariableDeclaration.addChild(currentVariableIdentifier);
     }
@@ -281,18 +281,18 @@ public class ASTListener extends ICSSBaseListener {
             return;
         }
 
-        VariableReference currentVariableReference = (VariableReference) currentContainer.pop();
+        ASTNode currentVariableReference = currentContainer.pop();
         if (currentContainer.peek() instanceof Declaration) {
-            Declaration currentDeclaration = (Declaration) currentContainer.peek();
+            ASTNode currentDeclaration = currentContainer.peek();
             currentDeclaration.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof IfClause) {
-            IfClause currentIfClause = (IfClause) currentContainer.peek();
+            ASTNode currentIfClause = currentContainer.peek();
             currentIfClause.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof ElseClause) {
-            ElseClause currentElseClause = (ElseClause) currentContainer.peek();
+            ASTNode currentElseClause = currentContainer.peek();
             currentElseClause.addChild(currentVariableReference);
         } else if (currentContainer.peek() instanceof VariableAssignment) {
-            VariableAssignment currentVariableAssignment = (VariableAssignment) currentContainer.peek();
+            ASTNode currentVariableAssignment = currentContainer.peek();
             currentVariableAssignment.addChild(currentVariableReference);
         }
     }
@@ -306,10 +306,10 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void exitVariableHardcodedValue(ICSSParser.VariableHardcodedValueContext ctx) {
         if (currentContainer.peek() instanceof Expression) {
-            Expression currentVariableValue = (Expression) currentContainer.pop();
-            VariableAssignment currentVariableDeclaration = (VariableAssignment) currentContainer.peek();
+            ASTNode currentVariableValue = currentContainer.pop();
+            ASTNode currentVariableAssignment = currentContainer.peek();
 
-            currentVariableDeclaration.addChild(currentVariableValue);
+            currentVariableAssignment.addChild(currentVariableValue);
         }
     }
 
