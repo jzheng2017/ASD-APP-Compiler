@@ -65,7 +65,7 @@ elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 condition: variableReference | TRUE | FALSE;
 conditionalBody: variableDeclaration* styleDeclaration* ifClause*;
 
-propertyValue: hardcodedPropertyValue | calculation | variableReference;
+propertyValue: calculation | hardcodedPropertyValue | variableReference;
 
 calculation: subCalculation;
 
@@ -75,9 +75,9 @@ subCalculation: subCalculation MUL subCalculation
 
 generalValue: variableReference | hardcodedValue;
 
-hardcodedPropertyValue: hardcodedValue | COLOR;
+hardcodedPropertyValue: hardcodedValue;
 
-hardcodedValue: dimensionSize | SCALAR;
+hardcodedValue: dimensionSize | SCALAR | COLOR;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
 
