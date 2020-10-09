@@ -60,7 +60,11 @@ public class Checker {
     }
 
     private void checkSemantic(ASTNode currentNode) {
-        if (currentNode instanceof Declaration) {
+        if (currentNode instanceof Operation) {
+            if (!isOperationAllowed((Operation) currentNode)) {
+                currentNode.setError("Illegal operation");
+            }
+        } else if (currentNode instanceof Declaration) {
             final String propertyName = ((Declaration) currentNode).property.name;
 
             if (isPropertyIllegal(propertyName)) {
