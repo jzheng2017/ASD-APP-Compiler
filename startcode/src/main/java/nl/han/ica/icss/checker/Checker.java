@@ -71,8 +71,15 @@ public class Checker {
                 currentNode.setError(String.format("%s is not a legal property name!", propertyName));
             }
 
-            if (!isValueTypeAllowed(currentNode)) {
+            if (!isPropertyValueTypeAllowed(currentNode)) {
                 currentNode.setError(String.format("%s has an illegal value type or expression!", propertyName));
+            }
+        } else if (currentNode instanceof IfClause) {
+            final Expression conditionalExpression = ((IfClause) currentNode).conditionalExpression;
+            final ExpressionType expressionType = determineExpressionType(conditionalExpression);
+
+            if (expressionType != ExpressionType.BOOL) {
+                currentNode.setError(String.format("Expected type: %s. Actual type: %s", ExpressionType.BOOL, expressionType));
             }
         }
     }
@@ -83,7 +90,7 @@ public class Checker {
         return !allowedProperties.contains(propertyName);
     }
 
-    private boolean isValueTypeAllowed(ASTNode currentNode) {
+    private boolean isPropertyValueTypeAllowed(ASTNode currentNode) {
         final String propertyName = ((Declaration) currentNode).property.name;
         final Expression expression = ((Declaration) currentNode).expression;
         ExpressionType propertyExpressionType = determineExpressionType(((Declaration) currentNode).expression);
@@ -144,6 +151,7 @@ public class Checker {
                 return leftExpressionType == ExpressionType.SCALAR || rightExpressionType == ExpressionType.SCALAR;
             }
         }
+
         return false;
     }
 
