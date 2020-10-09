@@ -2,6 +2,9 @@ package nl.han.ica.icss.checker;
 
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
+import nl.han.ica.icss.ast.operations.AddOperation;
+import nl.han.ica.icss.ast.operations.MultiplyOperation;
+import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
 
 import java.util.*;
@@ -9,9 +12,11 @@ import java.util.*;
 
 public class Checker {
     private LinkedList<HashMap<String, ExpressionType>> variableTypes;
+    private LinkedList<ScopeTypes> scopeTypes = new LinkedList<>();
 
     public void check(AST ast) {
         variableTypes = new LinkedList<>();
+        scopeTypes = new LinkedList<>();
         checkStylesheet(ast.root);
     }
 
@@ -22,28 +27,34 @@ public class Checker {
     private void checkChildren(ASTNode currentNode) {
         List<ASTNode> children = currentNode.getChildren();
 
-        generatingScope(currentNode);
-        checkingScope(currentNode);
-        checkingSemantic(currentNode);
-        removingScope();
+        generateScope(currentNode);
+        scanVariables(currentNode);
+        checkScope(currentNode);
+        checkSemantic(currentNode);
 
         children.forEach(this::checkChildren);
+
+        removeScope(currentNode);
     }
 
-    private void removingScope() {
-        variableTypes.removeLast();
+    private void removeScope(ASTNode currentNode) {
+        if (determineScopeType(currentNode) != null) {
+            variableTypes.removeLast();
+        }
     }
 
-
-    private void generatingScope(ASTNode currentNode) {
+    private void generateScope(ASTNode currentNode) {
         if (currentNode instanceof Stylesheet
                 || currentNode instanceof Stylerule
                 || currentNode instanceof IfClause
                 || currentNode instanceof ElseClause) {
             HashMap<String, ExpressionType> currentScope = new HashMap<>();
             variableTypes.add(currentScope);
+            scopeTypes.add(determineScopeType(currentNode));
         }
+    }
 
+    private void scanVariables(ASTNode currentNode) {
         if (currentNode instanceof VariableAssignment) {
             HashMap<String, ExpressionType> currentScope = variableTypes.getLast();
             String variableName = ((VariableAssignment) currentNode).name.name;
@@ -52,7 +63,7 @@ public class Checker {
         }
     }
 
-    private void checkingSemantic(ASTNode currentNode) {
+    private void checkSemantic(ASTNode currentNode) {
         if (currentNode instanceof Declaration) {
             final String propertyName = ((Declaration) currentNode).property.name;
 
@@ -61,7 +72,7 @@ public class Checker {
             }
 
             if (!isValueTypeAllowed(currentNode)) {
-                currentNode.setError(String.format("%s has an illegal value type!", propertyName));
+                currentNode.setError(String.format("%s has an illegal value type or expression!", propertyName));
             }
         }
     }
@@ -87,17 +98,57 @@ public class Checker {
 
             return propertyExpressionType == ExpressionType.COLOR;
         } else {
+            if (propertyExpressionType == ExpressionType.UNDEFINED) {
+                if (expression instanceof VariableReference) {
+                    final String variableName = ((VariableReference) expression).name;
+                    propertyExpressionType = getVariableExpressionType(variableName);
+                } else if (expression instanceof Operation) {
+                    return isOperationAllowed((Operation) expression);
+                }
+            }
             return propertyExpressionType == ExpressionType.PERCENTAGE
-                    || propertyExpressionType == ExpressionType.PIXEL
-                    || propertyExpressionType == ExpressionType.UNDEFINED;
+                    || propertyExpressionType == ExpressionType.PIXEL;
         }
 
 
 //        throw new IllegalArgumentException("Something went wrong with checking the value type!");
     }
 
+    private boolean isOperationAllowed(Operation operation) {
+        Expression left = operation.lhs;
+        Expression right = operation.rhs;
 
-    private void checkingScope(ASTNode currentNode) {
+        if (left instanceof Operation) {
+            return isOperationAllowed((Operation) left);
+        }
+
+        if (right instanceof Operation) {
+            return isOperationAllowed((Operation) right);
+        }
+
+        ExpressionType leftExpressionType = determineExpressionType(left);
+        ExpressionType rightExpressionType = determineExpressionType(right);
+
+        if (left instanceof ColorLiteral || right instanceof ColorLiteral) { //operation can not contain a color literal
+            return false;
+        } else {
+            boolean isAddOrSubtract = operation instanceof AddOperation || operation instanceof SubtractOperation;
+            boolean isMultiplication = operation instanceof MultiplyOperation;
+
+            if (isAddOrSubtract) {
+                boolean hasPixelLiteralOnBothSides = leftExpressionType == ExpressionType.PIXEL && rightExpressionType == ExpressionType.PIXEL;
+                boolean hasPercentageLiteralOnBothSides = leftExpressionType == ExpressionType.PERCENTAGE && rightExpressionType == ExpressionType.PERCENTAGE;
+
+                return hasPixelLiteralOnBothSides || hasPercentageLiteralOnBothSides;
+            } else if (isMultiplication) {
+                return leftExpressionType == ExpressionType.SCALAR || rightExpressionType == ExpressionType.SCALAR;
+            }
+        }
+        return false;
+    }
+
+
+    private void checkScope(ASTNode currentNode) {
         if (currentNode instanceof VariableReference) {
             final String variableName = ((VariableReference) currentNode).name;
             if (!isVariableInScope(variableName)) {
@@ -132,6 +183,20 @@ public class Checker {
         throw new IllegalArgumentException("Variable not in scope!");
     }
 
+    private ScopeTypes determineScopeType(ASTNode currentNode) {
+        if (currentNode instanceof Stylesheet) {
+            return ScopeTypes.STYLESHEET;
+        } else if (currentNode instanceof Stylerule) {
+            return ScopeTypes.STYLE_RULE;
+        } else if (currentNode instanceof IfClause) {
+            return ScopeTypes.IF;
+        } else if (currentNode instanceof ElseClause) {
+            return ScopeTypes.ELSE;
+        }
+
+        return null;
+    }
+
     private ExpressionType determineExpressionType(Expression expression) {
         if (expression instanceof BoolLiteral) {
             return ExpressionType.BOOL;
@@ -143,9 +208,10 @@ public class Checker {
             return ExpressionType.PIXEL;
         } else if (expression instanceof ScalarLiteral) {
             return ExpressionType.SCALAR;
+        } else if (expression instanceof VariableReference) {
+            return getVariableExpressionType(((VariableReference) expression).name);
         } else {
             return ExpressionType.UNDEFINED;
         }
-
     }
 }
