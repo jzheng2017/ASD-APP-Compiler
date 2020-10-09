@@ -14,15 +14,14 @@ import java.util.LinkedList;
 
 public class EvalExpressions implements Transform {
 
-    private IHANLinkedList<HashMap<String, Literal>> variableValues;
+    private LinkedList<HashMap<String, Literal>> variableValues;
 
     public EvalExpressions() {
-        //variableValues = new HANLinkedList<>();
+        variableValues = new LinkedList<>();
     }
 
     @Override
     public void apply(AST ast) {
-        //variableValues = new HANLinkedList<>();
 
     }
 

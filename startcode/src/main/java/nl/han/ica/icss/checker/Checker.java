@@ -137,7 +137,6 @@ public class Checker {
             return isOperationAllowed((Operation) right);
         }
 
-
         return evaluateOperation(operation);
     }
 
@@ -190,12 +189,15 @@ public class Checker {
     private ExpressionType getVariableExpressionType(String variableName) {
         Iterator<HashMap<String, ExpressionType>> iterator = variableTypes.descendingIterator();
 
+        //iterating backwards because the last scope in the list is the most recent scope
         while (iterator.hasNext()) {
             HashMap<String, ExpressionType> currentScope = iterator.next();
 
             ExpressionType expressionType = currentScope.get(variableName);
 
-            if (expressionType != null) {
+            final boolean expressionTypeDetermined = expressionType != null;
+
+            if (expressionTypeDetermined) {
                 return expressionType;
             }
         }
