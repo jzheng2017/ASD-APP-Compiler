@@ -105,6 +105,9 @@ public class ASTListener extends ICSSBaseListener {
         } else if (currentContainer.peek() instanceof IfClause) {
             ASTNode parentIfClause = currentContainer.peek();
             parentIfClause.addChild(currentIfClause);
+        } else if (currentContainer.peek() instanceof ElseClause) {
+            ASTNode parentIfClause = currentContainer.peek();
+            parentIfClause.addChild(currentIfClause);
         }
     }
 
