@@ -12,9 +12,11 @@ import java.util.*;
 
 public class Checker {
     private LinkedList<HashMap<String, ExpressionType>> variableTypes;
+    private LinkedList<ExpressionType> expressionTypes;
 
     public void check(AST ast) {
         variableTypes = new LinkedList<>();
+        expressionTypes = new LinkedList<>();
         checkStylesheet(ast.root);
     }
 
@@ -92,7 +94,7 @@ public class Checker {
         final ExpressionType expressionType = determineExpressionType(conditionalExpression);
 
         if (expressionType != ExpressionType.BOOL) {
-            currentNode.setError(String.format("Expected type: %s. Actual type: %s", ExpressionType.BOOL, expressionType));
+            currentNode.setError(String.format("If Clause: Expected type: %s. Actual type: %s", ExpressionType.BOOL, expressionType));
         }
     }
 
@@ -132,50 +134,102 @@ public class Checker {
         }
     }
 
-    private ExpressionType getExpressionType(Expression expression) {
-        final String variableName = ((VariableReference) expression).name;
-        return getVariableExpressionType(variableName);
-    }
-
     private boolean isOperationAllowed(Operation operation) {
-        Expression left = operation.lhs;
-        Expression right = operation.rhs;
-
-        if (left instanceof Operation) {
-            return isOperationAllowed((Operation) left);
-        }
-
-        if (right instanceof Operation) {
-            return isOperationAllowed((Operation) right);
-        }
-
-        return evaluateOperation(operation);
+        expressionTypes.clear();
+        return validateOperation(operation);
     }
 
-    private boolean evaluateOperation(Operation operation) {
+    private boolean validateOperation(Operation operation) {
         Expression left = operation.lhs;
         Expression right = operation.rhs;
 
-        ExpressionType leftExpressionType = determineExpressionType(left);
-        ExpressionType rightExpressionType = determineExpressionType(right);
-
-        if (leftExpressionType == ExpressionType.COLOR || rightExpressionType == ExpressionType.COLOR) { //operation can not contain a color literal
-            return false;
-        } else {
-            boolean isAddOrSubtract = operation instanceof AddOperation || operation instanceof SubtractOperation;
-            boolean isMultiplication = operation instanceof MultiplyOperation;
-
-            if (isAddOrSubtract) {
-                boolean hasPixelLiteralOnBothSides = leftExpressionType == ExpressionType.PIXEL && rightExpressionType == ExpressionType.PIXEL;
-                boolean hasPercentageLiteralOnBothSides = leftExpressionType == ExpressionType.PERCENTAGE && rightExpressionType == ExpressionType.PERCENTAGE;
-
-                return hasPixelLiteralOnBothSides || hasPercentageLiteralOnBothSides;
-            } else if (isMultiplication) {
-                return leftExpressionType == ExpressionType.SCALAR || rightExpressionType == ExpressionType.SCALAR;
+        //recursively validate the operations
+        if (left instanceof Operation) {
+            if (!validateOperation((Operation) left)) {
+                return false;
+            }
+        } else if (left instanceof VariableReference) {
+            ExpressionType expressionType = getVariableExpressionType(((VariableReference) left).name);
+            if (expressionType != ExpressionType.UNDEFINED) {
+                expressionTypes.addFirst(expressionType);
+            } else {
+                return false;
+            }
+        } else if (left instanceof Literal) {
+            ExpressionType expressionType = determineExpressionType(left);
+            if (expressionType != ExpressionType.UNDEFINED) {
+                expressionTypes.addFirst(expressionType);
             }
         }
 
+        if (right instanceof Operation) {
+            if (!validateOperation((Operation) right)) {
+                return false;
+            }
+        } else if (right instanceof VariableReference) {
+            ExpressionType expressionType = getVariableExpressionType(((VariableReference) right).name);
+            if (expressionType != ExpressionType.UNDEFINED) {
+                expressionTypes.addFirst(expressionType);
+            } else {
+                return false;
+            }
+        } else if (right instanceof Literal) {
+            ExpressionType expressionType = determineExpressionType(right);
+            if (expressionType != ExpressionType.UNDEFINED) {
+                expressionTypes.addFirst(expressionType);
+            }
+        }
+
+        //actual validation of the semantics
+        ExpressionType leftType = expressionTypes.removeFirst();
+        ExpressionType rightType = expressionTypes.removeFirst();
+
+        if ((leftType == ExpressionType.COLOR
+                || rightType == ExpressionType.COLOR)
+                || (leftType == ExpressionType.BOOL || rightType == ExpressionType.BOOL)) {
+            return false;
+        }
+
+        if (operation instanceof AddOperation || operation instanceof SubtractOperation) {
+
+            if (leftType == rightType) {
+                expressionTypes.addFirst(leftType);
+                return true;
+            }
+            return false;
+        } else if (operation instanceof MultiplyOperation) {
+            if ((leftType == ExpressionType.SCALAR || rightType == ExpressionType.SCALAR)
+                    && ((leftType == ExpressionType.PIXEL || rightType == ExpressionType.PIXEL)
+                    || (leftType == ExpressionType.PERCENTAGE || rightType == ExpressionType.PERCENTAGE))) {
+                if (leftType != ExpressionType.SCALAR) {
+                    expressionTypes.addFirst(leftType);
+                } else {
+                    expressionTypes.addFirst(rightType);
+                }
+
+                return true;
+            }
+            return false;
+        }
+
         return false;
+    }
+
+    private ExpressionType determineOperationExpressionType(Operation operation) {
+        if (operation.lhs instanceof PercentageLiteral || operation.rhs instanceof PercentageLiteral) {
+            return ExpressionType.PERCENTAGE;
+        } else if (operation.lhs instanceof PixelLiteral || operation.rhs instanceof PixelLiteral) {
+            return ExpressionType.PIXEL;
+        } else if (operation.lhs instanceof ScalarLiteral && operation.rhs instanceof ScalarLiteral) {
+            return ExpressionType.SCALAR;
+        }
+
+        return ExpressionType.UNDEFINED;
+    }
+
+    private ExpressionType getExpressionType(Expression expression) {
+        final String variableName = ((VariableReference) expression).name;
+        return getVariableExpressionType(variableName);
     }
 
 
@@ -214,7 +268,7 @@ public class Checker {
             }
         }
 
-        return null;
+        return ExpressionType.UNDEFINED;
     }
 
     private ExpressionType determineExpressionType(Expression expression) {
@@ -231,6 +285,9 @@ public class Checker {
         } else if (expression instanceof VariableReference) {
             return getVariableExpressionType(((VariableReference) expression).name);
         } else {
+            if (expression instanceof Operation) {
+                return determineOperationExpressionType((Operation) expression);
+            }
             return ExpressionType.UNDEFINED;
         }
     }

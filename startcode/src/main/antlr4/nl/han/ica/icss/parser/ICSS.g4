@@ -80,7 +80,7 @@ generalValue: variableReference | hardcodedValue;
 
 hardcodedPropertyValue: hardcodedValue;
 
-hardcodedValue: dimensionSize | SCALAR | COLOR;
+hardcodedValue: dimensionSize | SCALAR | COLOR | TRUE | FALSE;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
 
