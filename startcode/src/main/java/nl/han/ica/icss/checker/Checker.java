@@ -56,8 +56,25 @@ public class Checker {
         if (currentNode instanceof VariableAssignment) {
             HashMap<String, ExpressionType> currentScope = variableTypes.getLast();
             String variableName = ((VariableAssignment) currentNode).name.name;
+            ExpressionType existingVariableExpressionType = getVariableExpressionType(variableName);
             ExpressionType variableExpressionType = determineExpressionType(((VariableAssignment) currentNode).expression);
-            currentScope.put(variableName, variableExpressionType);
+
+            final boolean variableDoesNotExistYet = existingVariableExpressionType == ExpressionType.UNDEFINED;
+            if (variableDoesNotExistYet) {
+                currentScope.put(variableName, variableExpressionType);
+            } else {
+                final boolean newValueIsOfSameType = existingVariableExpressionType == variableExpressionType;
+
+                if (newValueIsOfSameType) {
+                    currentScope.put(variableName, variableExpressionType);
+                } else {
+                    currentNode
+                            .setError(String.format(
+                                    "You can not change the data type of an existing variable! Expected type: %s Actual type: %s"
+                                    , existingVariableExpressionType
+                                    , variableExpressionType));
+                }
+            }
         }
     }
 
@@ -107,7 +124,7 @@ public class Checker {
     private boolean isPropertyValueTypeAllowed(ASTNode currentNode) {
         final String propertyName = ((Declaration) currentNode).property.name;
         final Expression expression = ((Declaration) currentNode).expression;
-        ExpressionType propertyExpressionType = determineExpressionType(((Declaration) currentNode).expression);
+        ExpressionType propertyExpressionType = determineExpressionType(expression);
 
         final boolean isExpression = propertyExpressionType == ExpressionType.UNDEFINED;
 
@@ -143,75 +160,84 @@ public class Checker {
         Expression left = operation.lhs;
         Expression right = operation.rhs;
 
-        //recursively validate the operations
-        if (left instanceof Operation) {
-            if (!validateOperation((Operation) left)) {
-                return false;
-            }
-        } else if (left instanceof VariableReference) {
-            ExpressionType expressionType = getVariableExpressionType(((VariableReference) left).name);
+        if (addExpressionTypeToList(left)) {
+            return false;
+        }
+
+        if (addExpressionTypeToList(right)) {
+            return false;
+        }
+
+        return validateOperationExpressionTypes(operation);
+    }
+
+    private boolean addExpressionTypeToList(Expression expression) {
+        if (expression instanceof Operation) {
+            return !validateOperation((Operation) expression);
+        } else if (expression instanceof VariableReference) {
+            ExpressionType expressionType = getVariableExpressionType(((VariableReference) expression).name);
             if (expressionType != ExpressionType.UNDEFINED) {
                 expressionTypes.addFirst(expressionType);
             } else {
-                return false;
+                return true;
             }
-        } else if (left instanceof Literal) {
-            ExpressionType expressionType = determineExpressionType(left);
+        } else if (expression instanceof Literal) {
+            ExpressionType expressionType = determineExpressionType(expression);
             if (expressionType != ExpressionType.UNDEFINED) {
                 expressionTypes.addFirst(expressionType);
             }
         }
+        return false;
+    }
 
-        if (right instanceof Operation) {
-            if (!validateOperation((Operation) right)) {
-                return false;
-            }
-        } else if (right instanceof VariableReference) {
-            ExpressionType expressionType = getVariableExpressionType(((VariableReference) right).name);
-            if (expressionType != ExpressionType.UNDEFINED) {
-                expressionTypes.addFirst(expressionType);
-            } else {
-                return false;
-            }
-        } else if (right instanceof Literal) {
-            ExpressionType expressionType = determineExpressionType(right);
-            if (expressionType != ExpressionType.UNDEFINED) {
-                expressionTypes.addFirst(expressionType);
-            }
-        }
-
-        //actual validation of the semantics
+    private boolean validateOperationExpressionTypes(Operation operation) {
         ExpressionType leftType = expressionTypes.removeFirst();
         ExpressionType rightType = expressionTypes.removeFirst();
 
-        if ((leftType == ExpressionType.COLOR
-                || rightType == ExpressionType.COLOR)
-                || (leftType == ExpressionType.BOOL || rightType == ExpressionType.BOOL)) {
+        if (hasIllegalExpressionTypes(leftType, rightType)) {
             return false;
         }
 
         if (operation instanceof AddOperation || operation instanceof SubtractOperation) {
-
-            if (leftType == rightType) {
-                expressionTypes.addFirst(leftType);
-                return true;
-            }
-            return false;
+            return validateAddSubtractOperationExpressionTypes(leftType, rightType);
         } else if (operation instanceof MultiplyOperation) {
-            if ((leftType == ExpressionType.SCALAR || rightType == ExpressionType.SCALAR)
-                    && ((leftType == ExpressionType.PIXEL || rightType == ExpressionType.PIXEL)
-                    || (leftType == ExpressionType.PERCENTAGE || rightType == ExpressionType.PERCENTAGE))) {
-                if (leftType != ExpressionType.SCALAR) {
-                    expressionTypes.addFirst(leftType);
-                } else {
-                    expressionTypes.addFirst(rightType);
-                }
-
-                return true;
-            }
-            return false;
+            return validateMultiplyExpressionTypes(leftType, rightType);
         }
 
+        return false;
+    }
+
+    private boolean hasIllegalExpressionTypes(ExpressionType leftType, ExpressionType rightType) {
+        return (leftType == ExpressionType.COLOR
+                || rightType == ExpressionType.COLOR)
+                || (leftType == ExpressionType.BOOL || rightType == ExpressionType.BOOL);
+    }
+
+    private boolean validateMultiplyExpressionTypes(ExpressionType leftType, ExpressionType rightType) {
+        final boolean hasAtLeastOneScalar = leftType == ExpressionType.SCALAR || rightType == ExpressionType.SCALAR;
+        final boolean hasValidExpressionType = (leftType == ExpressionType.PIXEL || rightType == ExpressionType.PIXEL)
+                || (leftType == ExpressionType.PERCENTAGE || rightType == ExpressionType.PERCENTAGE)
+                || (rightType == ExpressionType.SCALAR);
+
+        if (hasAtLeastOneScalar && hasValidExpressionType) {
+            if (leftType != ExpressionType.SCALAR) {
+                expressionTypes.addFirst(leftType);
+            } else {
+                expressionTypes.addFirst(rightType);
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    private boolean validateAddSubtractOperationExpressionTypes(ExpressionType leftType, ExpressionType rightType) {
+        final boolean isMatchingExpressionType = leftType == rightType;
+
+        if (isMatchingExpressionType) {
+            expressionTypes.addFirst(leftType);
+            return true;
+        }
         return false;
     }
 
