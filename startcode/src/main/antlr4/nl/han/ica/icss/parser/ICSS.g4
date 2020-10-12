@@ -41,6 +41,14 @@ MIN: '-';
 MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
+NEGATION_OPERATOR: '!';
+LT: '<';
+LET: '<=';
+EQ: '==';
+NQ: '!=';
+GET: '>=';
+GT: '>';
+
 //--- PARSER: ---
 
 stylesheet: variableDeclaration* stylerule+ | EOF;
@@ -48,9 +56,9 @@ stylesheet: variableDeclaration* stylerule+ | EOF;
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: calculation | variableReference | variableHardcodedValue;
+variableValue: variableReference | booleanExpression | calculation | variableHardcodedValue;
 
-variableHardcodedValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
+variableHardcodedValue: PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
 stylerule: selector OPEN_BRACE styleBody CLOSE_BRACE;
 selector: tagSelector | classSelector | idSelector;
@@ -64,7 +72,7 @@ propertyIdentifier: LOWER_IDENT;
 ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditionalBody CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
-condition: variableReference | TRUE | FALSE;
+condition: variableReference | booleanExpression;
 conditionalBody: conditionalBodyLine+;
 conditionalBodyLine: variableDeclaration | styleDeclaration | ifClause;
 
@@ -84,12 +92,9 @@ hardcodedValue: dimensionSize | SCALAR | COLOR | TRUE | FALSE;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
 
+booleanExpression: NEGATION_OPERATOR? (TRUE | FALSE | equality | variableReference);
+equality: generalValue (LT | LET | EQ | NQ | GET | GT) generalValue;
+
 tagSelector: LOWER_IDENT;
 classSelector: CLASS_IDENT;
 idSelector: ID_IDENT;
-
-
-
-
-
-

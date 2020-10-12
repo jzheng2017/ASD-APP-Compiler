@@ -37,7 +37,6 @@ public class Checker {
         if (scopeCreated) {
             variableTypes.removeLast();
         }
-
     }
 
     private boolean generateScope(ASTNode currentNode) {
@@ -85,6 +84,36 @@ public class Checker {
             checkDeclarationSemantic(currentNode);
         } else if (currentNode instanceof IfClause) {
             checkIfClauseSemantic(currentNode);
+        } else if (currentNode instanceof BooleanComparison) {
+            checkBooleanComparisonSemantic(currentNode);
+        } else if (currentNode instanceof BooleanExpression) {
+            checkBooleanExpressionSemantic(currentNode);
+        }
+    }
+
+    private void checkBooleanExpressionSemantic(ASTNode currentNode) {
+        BooleanExpression booleanExpression = (BooleanExpression) currentNode;
+        Expression expression = booleanExpression.getExpression();
+        ExpressionType expressionType = determineExpressionType(expression);
+
+        if (expressionType != ExpressionType.BOOL) {
+            currentNode.setError(String.format("BooleanExpression: Expected type: %s, Actual type: %s", ExpressionType.BOOL, expressionType));
+        }
+    }
+
+    private void checkBooleanComparisonSemantic(ASTNode currentNode) {
+        BooleanComparison booleanComparison = (BooleanComparison) currentNode;
+        ExpressionType left = determineExpressionType(booleanComparison.getLeft());
+        ExpressionType right = determineExpressionType(booleanComparison.getRight());
+        ComparisonOperator operator = booleanComparison.getOperator();
+        final boolean bothSidesSameType = left == right;
+
+        if (bothSidesSameType) {
+            if ((operator != ComparisonOperator.EQ && operator != ComparisonOperator.NQ) && (left == ExpressionType.COLOR || right == ExpressionType.BOOL)) {
+                currentNode.setError(String.format("BooleanComparison: Non numeric literals can not be used with the %s operator", operator));
+            }
+        } else {
+            currentNode.setError("BooleanComparison: Both sides must be of the same data type!");
         }
     }
 
@@ -298,7 +327,7 @@ public class Checker {
     }
 
     private ExpressionType determineExpressionType(Expression expression) {
-        if (expression instanceof BoolLiteral) {
+        if (expression instanceof BoolLiteral || expression instanceof BooleanExpression || expression instanceof BooleanComparison) {
             return ExpressionType.BOOL;
         } else if (expression instanceof ColorLiteral) {
             return ExpressionType.COLOR;

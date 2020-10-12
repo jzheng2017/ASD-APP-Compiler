@@ -3,7 +3,6 @@ package nl.han.ica.icss.ast;
 import java.util.Objects;
 
 public class VariableReference extends Expression {
-
 	public String name;
 	
 	public VariableReference(String name) {

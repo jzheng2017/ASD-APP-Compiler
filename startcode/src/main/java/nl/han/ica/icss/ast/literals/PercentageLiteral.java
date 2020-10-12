@@ -1,5 +1,6 @@
 package nl.han.ica.icss.ast.literals;
 
+import nl.han.ica.icss.ast.ComparisonOperator;
 import nl.han.ica.icss.ast.Literal;
 
 import java.util.Objects;
@@ -10,9 +11,11 @@ public class PercentageLiteral extends Literal {
     public PercentageLiteral(int value) {
         this.value = value;
     }
+
     public PercentageLiteral(String text) {
         this.value = Integer.parseInt(text.substring(0, text.length() - 1));
     }
+
     @Override
     public String getNodeLabel() {
         return "Percentage literal (" + value + ")";
@@ -28,7 +31,34 @@ public class PercentageLiteral extends Literal {
     }
 
     @Override
+    public String toString() {
+        return "" + value + "%";
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public boolean evaluate(Literal other, ComparisonOperator operator) {
+        if (!(other instanceof PercentageLiteral))
+            throw new IllegalArgumentException("Comparing two different literals is not allowed");
+
+        if (operator == ComparisonOperator.LT) {
+            return this.value < ((PercentageLiteral) other).value;
+        } else if (operator == ComparisonOperator.LET) {
+            return this.value <= ((PercentageLiteral) other).value;
+        } else if (operator == ComparisonOperator.EQ) {
+            return this.value == ((PercentageLiteral) other).value;
+        } else if (operator == ComparisonOperator.NQ) {
+            return this.value < ((PercentageLiteral) other).value;
+        } else if (operator == ComparisonOperator.GET) {
+            return this.value >= ((PercentageLiteral) other).value;
+        } else if (operator == ComparisonOperator.GT) {
+            return this.value > ((PercentageLiteral) other).value;
+        }
+
+        throw new IllegalStateException(String.format("Unimplemented comparison operator: %s", operator));
     }
 }
