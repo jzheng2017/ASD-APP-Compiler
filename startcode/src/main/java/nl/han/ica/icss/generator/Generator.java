@@ -46,7 +46,8 @@ public class Generator {
                         .append("\t")
                         .append(propertyName)
                         .append(": ")
-                        .append(expression);
+                        .append(expression)
+                        .append(";");
                 newLine = System.lineSeparator();
             }
         }
