@@ -106,10 +106,12 @@ public class Checker {
         ExpressionType left = determineExpressionType(booleanComparison.getLeft());
         ExpressionType right = determineExpressionType(booleanComparison.getRight());
         ComparisonOperator operator = booleanComparison.getOperator();
+
         final boolean bothSidesSameType = left == right;
 
         if (bothSidesSameType) {
-            if ((operator != ComparisonOperator.EQ && operator != ComparisonOperator.NQ) && (left == ExpressionType.COLOR || right == ExpressionType.BOOL)) {
+            if ((operator != ComparisonOperator.EQ && operator != ComparisonOperator.NQ && operator != ComparisonOperator.AND && operator != ComparisonOperator.OR)
+                    && (left == ExpressionType.COLOR || right == ExpressionType.BOOL)) {
                 currentNode.setError(String.format("BooleanComparison: Non numeric literals can not be used with the %s operator", operator));
             }
         } else {

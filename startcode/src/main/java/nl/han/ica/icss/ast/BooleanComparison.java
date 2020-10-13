@@ -12,6 +12,10 @@ public class BooleanComparison extends Expression {
 
     }
 
+    public BooleanComparison(ComparisonOperator operator) {
+        this.operator = operator;
+    }
+
     public BooleanComparison(boolean isNegated, ComparisonOperator operator, Expression left, Expression right) {
         this.isNegated = isNegated;
         this.operator = operator;
@@ -32,6 +36,16 @@ public class BooleanComparison extends Expression {
         if (right != null)
             children.add(right);
         return children;
+    }
+
+    @Override
+    public ASTNode addChild(ASTNode child) {
+        if (this.left == null) {
+            this.left = (Expression) child;
+        } else if (this.right == null) {
+            this.right = (Expression) child;
+        }
+        return this;
     }
 
     public ComparisonOperator getOperator() {

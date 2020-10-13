@@ -51,6 +51,10 @@ public class BoolLiteral extends Literal {
             return this.value == ((BoolLiteral) other).value;
         } else if (operator == ComparisonOperator.NQ) {
             return this.value != ((BoolLiteral) other).value;
+        } else if (operator == ComparisonOperator.AND) {
+            return this.value && ((BoolLiteral) other).value;
+        } else if (operator == ComparisonOperator.OR) {
+            return this.value || ((BoolLiteral) other).value;
         } else if (operator == ComparisonOperator.LT
                 || operator == ComparisonOperator.LET
                 || operator == ComparisonOperator.GET

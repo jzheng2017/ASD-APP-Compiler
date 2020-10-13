@@ -48,7 +48,8 @@ EQ: '==';
 NQ: '!=';
 GET: '>=';
 GT: '>';
-
+AND: '&&';
+OR: '||';
 //--- PARSER: ---
 
 stylesheet: variableDeclaration* stylerule+ | EOF;
@@ -56,7 +57,7 @@ stylesheet: variableDeclaration* stylerule+ | EOF;
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: booleanExpression | variableHardcodedValue | calculation ;
+variableValue: nestedBooleanExpressions | variableHardcodedValue | calculation ;
 
 variableHardcodedValue: PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
@@ -72,7 +73,7 @@ propertyIdentifier: LOWER_IDENT;
 ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditionalBody CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
-condition: variableReference | booleanExpression;
+condition: variableReference | nestedBooleanExpressions;
 conditionalBody: conditionalBodyLine+;
 conditionalBodyLine: variableDeclaration | styleDeclaration | ifClause;
 
@@ -91,6 +92,13 @@ hardcodedPropertyValue: hardcodedValue;
 hardcodedValue: dimensionSize | SCALAR | COLOR | TRUE | FALSE;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
+
+nestedBooleanExpressions: booleanExpressions;
+
+
+booleanExpressions: booleanExpressions AND booleanExpressions
+                    | booleanExpressions OR booleanExpressions
+                    | booleanExpression;
 
 booleanExpression: NEGATION_OPERATOR? (TRUE | FALSE | equality | variableReference);
 equality: subCalculation (LT | LET | EQ | NQ | GET | GT) subCalculation;

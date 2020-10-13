@@ -6,7 +6,9 @@ public enum ComparisonOperator {
     EQ("=="),
     NQ("!="),
     GET(">="),
-    GT(">");
+    GT(">"),
+    AND("&&"),
+    OR("||");
 
     private final String stringValue;
 

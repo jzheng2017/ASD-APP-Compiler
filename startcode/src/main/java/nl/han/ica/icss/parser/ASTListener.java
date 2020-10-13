@@ -106,34 +106,6 @@ public class ASTListener extends ICSSBaseListener {
         currentIfClause.addChild(currentElseClause);
     }
 
-    @Override
-    public void exitSubCalculation(ICSSParser.SubCalculationContext ctx) {
-//        final boolean isExpression = ctx.getChildCount() == 0;
-//
-//        if (isExpression) {
-//            Expression expression = this.determineValue(ctx.getChild(0).getText());
-//            currentContainer.push(expression);
-//        }
-
-        final boolean isOperation = ctx.getChildCount() == 3;
-
-        if (isOperation) {
-            Operation operation = this.determineOperator(ctx.getChild(1).getText());
-
-            operation.rhs = (Expression) currentContainer.pop();
-            operation.lhs = (Expression) currentContainer.pop();
-
-            currentContainer.push(operation);
-        }
-    }
-
-    @Override
-    public void exitCalculation(ICSSParser.CalculationContext ctx) {
-        ASTNode parentOperation = currentContainer.pop();
-
-        currentContainer.peek().addChild(parentOperation);
-    }
-
 
     @Override
     public void enterHardcodedValue(ICSSParser.HardcodedValueContext ctx) {
@@ -256,6 +228,52 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
+    public void exitSubCalculation(ICSSParser.SubCalculationContext ctx) {
+        final boolean isOperation = ctx.getChildCount() == 3;
+
+        if (isOperation) {
+            Operation operation = this.determineOperator(ctx.getChild(1).getText());
+
+            operation.rhs = (Expression) currentContainer.pop();
+            operation.lhs = (Expression) currentContainer.pop();
+
+            currentContainer.push(operation);
+        }
+    }
+
+    @Override
+    public void exitCalculation(ICSSParser.CalculationContext ctx) {
+        ASTNode parentOperation = currentContainer.pop();
+
+        currentContainer.peek().addChild(parentOperation);
+    }
+
+    @Override
+    public void enterNestedBooleanExpressions(ICSSParser.NestedBooleanExpressionsContext ctx) {
+
+    }
+
+    @Override
+    public void exitNestedBooleanExpressions(ICSSParser.NestedBooleanExpressionsContext ctx) {
+        super.exitNestedBooleanExpressions(ctx);
+    }
+
+    @Override
+    public void enterBooleanExpressions(ICSSParser.BooleanExpressionsContext ctx) {
+        final boolean isBooleanComparison = ctx.getChildCount() == 3;
+
+        if (isBooleanComparison) {
+            currentContainer.push(new BooleanComparison(determineComparisonOperator(ctx.getChild(1).getText())));
+        }
+    }
+
+    @Override
+    public void exitBooleanExpressions(ICSSParser.BooleanExpressionsContext ctx) {
+        ASTNode node = currentContainer.pop();
+        currentContainer.peek().addChild(node);
+    }
+
+    @Override
     public void exitBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
         final boolean isNegated = ctx.getChildCount() == 2;
         boolean isComparison;
@@ -265,8 +283,8 @@ public class ASTListener extends ICSSBaseListener {
             if (isComparison) {
                 String operator = ctx.getChild(1).getChild(1).getText();
 
-                Expression rightExpression = (Expression)currentContainer.pop();
-                Expression leftExpression = (Expression)currentContainer.pop();
+                Expression rightExpression = (Expression) currentContainer.pop();
+                Expression leftExpression = (Expression) currentContainer.pop();
                 ComparisonOperator comparisonOperator = determineComparisonOperator(operator);
                 currentContainer.push(new BooleanComparison(true, comparisonOperator, leftExpression, rightExpression));
             } else {
@@ -278,8 +296,8 @@ public class ASTListener extends ICSSBaseListener {
             if (isComparison) {
                 String operator = ctx.getChild(0).getChild(1).getText();
 
-                Expression rightExpression = (Expression)currentContainer.pop();
-                Expression leftExpression = (Expression)currentContainer.pop();
+                Expression rightExpression = (Expression) currentContainer.pop();
+                Expression leftExpression = (Expression) currentContainer.pop();
 
                 ComparisonOperator comparisonOperator = determineComparisonOperator(operator);
                 currentContainer.push(new BooleanComparison(false, comparisonOperator, leftExpression, rightExpression));
@@ -288,10 +306,6 @@ public class ASTListener extends ICSSBaseListener {
                 currentContainer.push(new BooleanExpression(false, expression));
             }
         }
-
-        ASTNode currentBooleanExpression = currentContainer.pop();
-
-        currentContainer.peek().addChild(currentBooleanExpression);
     }
 
     private ComparisonOperator determineComparisonOperator(String operator) {
@@ -308,6 +322,10 @@ public class ASTListener extends ICSSBaseListener {
                 return ComparisonOperator.GET;
             case ">":
                 return ComparisonOperator.GT;
+            case "&&":
+                return ComparisonOperator.AND;
+            case "||":
+                return ComparisonOperator.OR;
             default:
                 return null;
         }
