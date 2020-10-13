@@ -21,7 +21,7 @@ public class VariableAssignment extends ASTNode {
 	public ASTNode addChild(ASTNode child) {
 		if(name == null) {
 			name = (VariableReference) child;
-		} else if(expression == null) {
+		} else {
 			expression = (Expression) child;
 		}
 

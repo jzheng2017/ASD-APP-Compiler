@@ -35,7 +35,7 @@ public class Checker {
         children.forEach(this::checkChildren);
 
         if (scopeCreated) {
-            variableTypes.removeLast();
+            variableTypes.removeFirst();
         }
     }
 
@@ -45,7 +45,7 @@ public class Checker {
                 || currentNode instanceof IfClause
                 || currentNode instanceof ElseClause) {
             HashMap<String, ExpressionType> currentScope = new HashMap<>();
-            variableTypes.add(currentScope);
+            variableTypes.addFirst(currentScope);
             return true;
         }
         return false;
@@ -53,7 +53,7 @@ public class Checker {
 
     private void registerVariables(ASTNode currentNode) {
         if (currentNode instanceof VariableAssignment) {
-            HashMap<String, ExpressionType> currentScope = variableTypes.getLast();
+            HashMap<String, ExpressionType> currentScope = variableTypes.getFirst();
             String variableName = ((VariableAssignment) currentNode).name.name;
             ExpressionType existingVariableExpressionType = getVariableExpressionType(variableName);
             ExpressionType variableExpressionType = determineExpressionType(((VariableAssignment) currentNode).expression);
@@ -277,6 +277,10 @@ public class Checker {
             return ExpressionType.PIXEL;
         } else if (operation.lhs instanceof ScalarLiteral && operation.rhs instanceof ScalarLiteral) {
             return ExpressionType.SCALAR;
+        } else if (operation.lhs instanceof Operation) {
+            return determineOperationExpressionType((Operation) operation.lhs);
+        } else if (operation.rhs instanceof Operation) {
+            return determineOperationExpressionType((Operation) operation.rhs);
         }
 
         return ExpressionType.UNDEFINED;
@@ -286,7 +290,6 @@ public class Checker {
         final String variableName = ((VariableReference) expression).name;
         return getVariableExpressionType(variableName);
     }
-
 
     private void checkScope(ASTNode currentNode) {
         if (currentNode instanceof VariableReference) {
@@ -308,12 +311,8 @@ public class Checker {
     }
 
     private ExpressionType getVariableExpressionType(String variableName) {
-        Iterator<HashMap<String, ExpressionType>> iterator = variableTypes.descendingIterator();
-
         //iterating backwards because the last scope in the list is the most recent scope
-        while (iterator.hasNext()) {
-            HashMap<String, ExpressionType> currentScope = iterator.next();
-
+        for (HashMap<String, ExpressionType> currentScope : variableTypes) {
             ExpressionType expressionType = currentScope.get(variableName);
 
             final boolean expressionTypeDetermined = expressionType != null;

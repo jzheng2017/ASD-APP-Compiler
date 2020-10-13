@@ -21,7 +21,7 @@ public class BooleanComparison extends Expression {
 
     @Override
     public String getNodeLabel() {
-        return (isNegated ? "!" : "") + "BooleanComparison (" + operator + ")";
+        return (isNegated ? "Negated" : "") + "BooleanComparison (" + operator + ")";
     }
 
     @Override

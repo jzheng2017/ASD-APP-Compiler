@@ -1,6 +1,10 @@
 package nl.han.ica.icss.ast;
 
+import nl.han.ica.icss.transforms.EvalExpressions;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 public abstract class Operation extends Expression {
 
@@ -10,20 +14,22 @@ public abstract class Operation extends Expression {
     @Override
     public ArrayList<ASTNode> getChildren() {
         ArrayList<ASTNode> children = new ArrayList<>();
-        if(lhs != null)
+        if (lhs != null)
             children.add(lhs);
-        if(rhs != null)
+        if (rhs != null)
             children.add(rhs);
         return children;
     }
 
     @Override
     public ASTNode addChild(ASTNode child) {
-        if(lhs == null) {
+        if (lhs == null) {
             lhs = (Expression) child;
-        } else if(rhs == null) {
+        } else if (rhs == null) {
             rhs = (Expression) child;
         }
         return this;
     }
+
+    public abstract int evaluate();
 }

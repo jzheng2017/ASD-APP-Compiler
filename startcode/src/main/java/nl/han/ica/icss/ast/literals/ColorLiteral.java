@@ -56,4 +56,9 @@ public class ColorLiteral extends Literal {
 
         throw new IllegalStateException(String.format("Unimplemented comparison operator: %s", operator));
     }
+
+    @Override
+    public int getNumericValue() {
+        throw new UnsupportedOperationException("Color literal can not be evaluated to a numeric value");
+    }
 }

@@ -61,4 +61,9 @@ public class ScalarLiteral extends Literal {
 
         throw new IllegalStateException(String.format("Unimplemented comparison operator: %s", operator));
     }
+
+    @Override
+    public int getNumericValue() {
+        return this.value;
+    }
 }

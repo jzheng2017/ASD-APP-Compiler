@@ -2,14 +2,15 @@ package nl.han.ica.icss.transforms;
 
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.BoolLiteral;
+import nl.han.ica.icss.ast.literals.PercentageLiteral;
+import nl.han.ica.icss.ast.literals.PixelLiteral;
+import nl.han.ica.icss.ast.literals.ScalarLiteral;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 public class EvalExpressions implements Transform {
-
     private LinkedList<HashMap<String, Literal>> variableValues;
 
     public EvalExpressions() {
@@ -37,7 +38,7 @@ public class EvalExpressions implements Transform {
         children.forEach(this::traverseTreeAndEvaluate);
 
         if (scopeCreated) {
-            variableValues.removeLast();
+            variableValues.removeFirst();
         }
     }
 
@@ -60,7 +61,7 @@ public class EvalExpressions implements Transform {
     private void evaluateVariableAssignment(VariableAssignment currentNode) {
         final String variableName = currentNode.name.name;
         final Expression expression = currentNode.expression;
-        HashMap<String, Literal> currentScope = variableValues.getLast();
+        HashMap<String, Literal> currentScope = variableValues.getFirst();
         Literal variableValue = null;
 
         if (expression instanceof Operation) {
@@ -96,11 +97,22 @@ public class EvalExpressions implements Transform {
             rightExpression = getVariableValue(((VariableReference) rightExpression).name);
         }
 
+        if (leftExpression instanceof Operation) {
+            leftExpression = evaluateOperation((Operation) leftExpression);
+        }
+
+        if (rightExpression instanceof Operation) {
+            rightExpression = evaluateOperation((Operation) rightExpression);
+        }
+
         Literal leftLiteral = (Literal) leftExpression;
         Literal rightLiteral = (Literal) rightExpression;
 
-        return new BoolLiteral(leftLiteral.evaluate(rightLiteral, operator));
-
+        if (expression.isNegated()) {
+            return new BoolLiteral(!(leftLiteral.evaluate(rightLiteral, operator)));
+        } else {
+            return new BoolLiteral(leftLiteral.evaluate(rightLiteral, operator));
+        }
     }
 
 
@@ -109,7 +121,7 @@ public class EvalExpressions implements Transform {
         Literal variableValue;
         if (booleanExpression instanceof VariableReference) {
             final String booleanExpressionName = ((VariableReference) booleanExpression).name;
-            variableValue = copyLiteral(getVariableValue(booleanExpressionName));
+            variableValue = getVariableValue(booleanExpressionName);
             variableValue = expression.isNegated() ? negateValue(variableValue) : variableValue;
 
             return variableValue;
@@ -141,6 +153,7 @@ public class EvalExpressions implements Transform {
 
     private Literal negateValue(Literal value) {
         if (value instanceof BoolLiteral) {
+            value = copyLiteral(value);
             boolean internalValue = ((BoolLiteral) value).value;
             ((BoolLiteral) value).value = !internalValue;
         }
@@ -152,6 +165,8 @@ public class EvalExpressions implements Transform {
         if (expression instanceof VariableReference) {
             final String variableName = ((VariableReference) expression).name;
             currentNode.expression = getVariableValue(variableName);
+        } else if (expression instanceof Operation) {
+            currentNode.expression = evaluateOperation((Operation) expression);
         }
     }
 
@@ -161,63 +176,35 @@ public class EvalExpressions implements Transform {
                 || currentNode instanceof IfClause
                 || currentNode instanceof ElseClause) {
             HashMap<String, Literal> currentScope = new HashMap<>();
-            variableValues.add(currentScope);
+            variableValues.addFirst(currentScope);
             return true;
         }
         return false;
     }
 
     private Literal evaluateOperation(Operation operation) {
-        Expression lhs = operation.lhs;
-        Expression rhs = operation.rhs;
-
-        if (lhs instanceof Operation) {
-            lhs = evaluateOperation((Operation) lhs);
+        if (operation.lhs instanceof Operation) {
+            operation.lhs = evaluateOperation((Operation) operation.lhs);
         }
 
-        if (rhs instanceof Operation) {
-            rhs = evaluateOperation((Operation) rhs);
+        if (operation.rhs instanceof Operation) {
+            operation.rhs = evaluateOperation((Operation) operation.rhs);
         }
 
-        if (lhs instanceof VariableReference) {
-            lhs = getVariableValue(((VariableReference) lhs).name);
+        if (operation.lhs instanceof VariableReference) {
+            operation.lhs = getVariableValue(((VariableReference) operation.lhs).name);
         }
 
-        if (rhs instanceof VariableReference) {
-            rhs = getVariableValue(((VariableReference) rhs).name);
+        if (operation.rhs instanceof VariableReference) {
+            operation.rhs = getVariableValue(((VariableReference) operation.rhs).name);
         }
-//        if (operation instanceof AddOperation) {
-//            if (lhs instanceof PixelLiteral && rhs instanceof PixelLiteral) {
-//                return new PixelLiteral(((PixelLiteral) lhs).value + ((PixelLiteral) rhs).value);
-//            } else if (lhs instanceof PercentageLiteral && rhs instanceof PercentageLiteral) {
-//                return new PercentageLiteral(((PercentageLiteral) lhs).value + ((PercentageLiteral) rhs).value);
-//            } else if (lhs instanceof ScalarLiteral && rhs instanceof ScalarLiteral) {
-//                return new ScalarLiteral(((ScalarLiteral) lhs).value + ((ScalarLiteral) rhs).value);
-//            }
-//        } else if (operation instanceof SubtractOperation) {
-//            if (lhs instanceof PixelLiteral && rhs instanceof PixelLiteral) {
-//                return new PixelLiteral(((PixelLiteral) lhs).value - ((PixelLiteral) rhs).value);
-//            } else if (lhs instanceof PercentageLiteral && rhs instanceof PercentageLiteral) {
-//                return new PercentageLiteral(((PercentageLiteral) lhs).value - ((PercentageLiteral) rhs).value);
-//            } else if (lhs instanceof ScalarLiteral && rhs instanceof ScalarLiteral) {
-//                return new ScalarLiteral(((ScalarLiteral) lhs).value - ((ScalarLiteral) rhs).value);
-//            }
-//        } else if (operation instanceof MultiplyOperation) {
-//            if (lhs instanceof PixelLiteral && rhs instanceof ScalarLiteral) {
-//                return new PixelLiteral(((PixelLiteral) lhs).value * ((ScalarLiteral) rhs).value);
-//
-//            } else if (lhs instanceof PercentageLiteral && rhs instanceof ScalarLiteral) {
-//                return new PixelLiteral(((PercentageLiteral) lhs).value * ((ScalarLiteral) rhs).value);
-//
-//            } else if (lhs instanceof ScalarLiteral && rhs instanceof ScalarLiteral) {
-//                return new PixelLiteral(((ScalarLiteral) lhs).value * ((ScalarLiteral) rhs).value);
-//            }
-//        }
 
-        if (lhs instanceof Literal) {
-            return (Literal) lhs;
-        } else if (rhs instanceof Literal) {
-            return (Literal) rhs;
+        if (operation.lhs instanceof PixelLiteral || operation.rhs instanceof PixelLiteral) {
+            return new PixelLiteral(operation.evaluate());
+        } else if (operation.lhs instanceof PercentageLiteral || operation.rhs instanceof PercentageLiteral) {
+            return new PercentageLiteral(operation.evaluate());
+        } else if (operation.lhs instanceof ScalarLiteral || operation.rhs instanceof ScalarLiteral) {
+            return new ScalarLiteral(operation.evaluate());
         }
 
 
@@ -225,12 +212,7 @@ public class EvalExpressions implements Transform {
     }
 
     private Literal getVariableValue(String variableName) {
-        Iterator<HashMap<String, Literal>> iterator = variableValues.descendingIterator();
-
-        //iterating backwards because the last scope in the list is the most recent scope
-        while (iterator.hasNext()) {
-            HashMap<String, Literal> currentScope = iterator.next();
-
+        for (HashMap<String, Literal> currentScope : variableValues) {
             Literal value = currentScope.get(variableName);
 
             final boolean valueFound = value != null;
