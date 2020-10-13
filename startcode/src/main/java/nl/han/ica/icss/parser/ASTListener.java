@@ -211,7 +211,11 @@ public class ASTListener extends ICSSBaseListener {
 
         ASTNode currentVariableReference = currentContainer.pop();
 
-        currentContainer.peek().addChild(currentVariableReference);
+        if (currentContainer.peek() instanceof BooleanExpression || currentContainer.peek() instanceof BooleanComparison) {
+            currentContainer.push(currentVariableReference);
+        } else {
+            currentContainer.peek().addChild(currentVariableReference);
+        }
     }
 
     @Override
@@ -274,38 +278,87 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
-    public void exitBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
+    public void enterBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
         final boolean isNegated = ctx.getChildCount() == 2;
         boolean isComparison;
 
         if (isNegated) {
             isComparison = ctx.getChild(1).getChildCount() > 1;
-            if (isComparison) {
-                String operator = ctx.getChild(1).getChild(1).getText();
-
-                Expression rightExpression = (Expression) currentContainer.pop();
-                Expression leftExpression = (Expression) currentContainer.pop();
-                ComparisonOperator comparisonOperator = determineComparisonOperator(operator);
-                currentContainer.push(new BooleanComparison(true, comparisonOperator, leftExpression, rightExpression));
-            } else {
-                Expression expression = determineValue(ctx.getChild(1).getText());
-                currentContainer.push(new BooleanExpression(true, expression));
-            }
         } else {
             isComparison = ctx.getChild(0).getChildCount() > 1;
-            if (isComparison) {
-                String operator = ctx.getChild(0).getChild(1).getText();
+        }
 
-                Expression rightExpression = (Expression) currentContainer.pop();
-                Expression leftExpression = (Expression) currentContainer.pop();
-
-                ComparisonOperator comparisonOperator = determineComparisonOperator(operator);
-                currentContainer.push(new BooleanComparison(false, comparisonOperator, leftExpression, rightExpression));
+        if (isComparison) {
+            currentContainer.push(new BooleanComparison(isNegated));
+        } else {
+            Expression expression;
+            if (isNegated) {
+                expression = determineValue(ctx.getChild(1).getText());
+                if (!(expression instanceof VariableReference)) {
+                    currentContainer.push(new BooleanExpression(true, expression));
+                }
             } else {
-                Expression expression = determineValue(ctx.getChild(0).getText());
-                currentContainer.push(new BooleanExpression(false, expression));
+                expression = determineValue(ctx.getChild(0).getText());
+                if (!(expression instanceof VariableReference)) {
+                    currentContainer.push(expression);
+                }
             }
         }
+    }
+
+
+    @Override
+    public void enterEquality(ICSSParser.EqualityContext ctx) {
+        BooleanComparison booleanComparison = (BooleanComparison) currentContainer.peek();
+        ComparisonOperator operator;
+        if (ctx.getChildCount() > 3) {
+            if (ctx.getChild(0).getText().equals("!")) {
+                operator = determineComparisonOperator(ctx.getChild(2).getText());
+            } else {
+                operator = determineComparisonOperator(ctx.getChild(1).getText());
+            }
+        } else {
+            operator = determineComparisonOperator(ctx.getChild(1).getText());
+        }
+
+        booleanComparison.setOperator(operator);
+    }
+
+    @Override
+    public void exitEquality(ICSSParser.EqualityContext ctx) {
+        Expression right = (Expression) currentContainer.pop();
+        Expression left = (Expression) currentContainer.pop();
+        boolean leftNegated = ctx.getChild(0).getText().equals("!");
+        boolean rightNegated = false;
+        if (leftNegated) {
+            rightNegated = ctx.getChild(3).getText().equals("!");
+            currentContainer.push(new BooleanExpression(true, left));
+        } else {
+            rightNegated = ctx.getChild(2).getText().equals("!");
+            currentContainer.push(left);
+        }
+
+        if (rightNegated) {
+            currentContainer.push(new BooleanExpression(true, right));
+        } else {
+            currentContainer.push(right);
+        }
+    }
+
+    @Override
+    public void exitBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
+        ASTNode right = currentContainer.pop();
+
+        if (currentContainer.peek() instanceof BooleanExpression
+                || currentContainer.peek() instanceof Literal
+                || currentContainer.peek() instanceof VariableReference) {
+            ASTNode left = currentContainer.pop();
+            currentContainer.peek().addChild(left);
+            currentContainer.peek().addChild(right);
+            return;
+        }
+
+        currentContainer.push(right);
     }
 
     private ComparisonOperator determineComparisonOperator(String operator) {

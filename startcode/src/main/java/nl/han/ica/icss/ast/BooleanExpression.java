@@ -10,6 +10,10 @@ public class BooleanExpression extends Expression {
 
     }
 
+    public BooleanExpression(boolean isNegated) {
+        this.isNegated = isNegated;
+    }
+
     public BooleanExpression(boolean isNegated, Expression expression) {
         this.isNegated = isNegated;
         this.expression = expression;

@@ -59,10 +59,12 @@ public class Checker {
             ExpressionType variableExpressionType = determineExpressionType(((VariableAssignment) currentNode).expression);
 
             final boolean variableDoesNotExistYet = existingVariableExpressionType == ExpressionType.UNDEFINED;
-            if (variableDoesNotExistYet) {
+            final boolean referencingUndefinedVariable = variableDoesNotExistYet && variableExpressionType == ExpressionType.UNDEFINED;
+
+            if (!referencingUndefinedVariable && variableDoesNotExistYet) {
                 currentScope.put(variableName, variableExpressionType);
-            } else {
-                final boolean newValueIsOfSameType = existingVariableExpressionType == variableExpressionType;
+            } else if (!variableDoesNotExistYet){
+                final boolean newValueIsOfSameType = variableExpressionType != ExpressionType.UNDEFINED && existingVariableExpressionType == variableExpressionType;
 
                 if (newValueIsOfSameType) {
                     currentScope.put(variableName, variableExpressionType);

@@ -10,13 +10,15 @@ public class IfClause extends ASTNode {
     public ArrayList<ASTNode> body = new ArrayList<>();
     public ElseClause elseClause;
 
-    public IfClause() { }
+    public IfClause() {
+    }
 
     public IfClause(Expression conditionalExpression, ArrayList<ASTNode> body) {
 
         this.conditionalExpression = conditionalExpression;
         this.body = body;
     }
+
     public IfClause(Expression conditionalExpression, ArrayList<ASTNode> body, ElseClause elseClause) {
 
         this.conditionalExpression = conditionalExpression;
@@ -28,21 +30,29 @@ public class IfClause extends ASTNode {
     public String getNodeLabel() {
         return "If_Clause";
     }
+
     @Override
     public ArrayList<ASTNode> getChildren() {
         ArrayList<ASTNode> children = new ArrayList<>();
         children.add(conditionalExpression);
         children.addAll(body);
-        if (elseClause!=null)
+        if (elseClause != null)
             children.add(elseClause);
 
         return children;
     }
 
     @Override
+    public ASTNode removeChild(ASTNode child) {
+        this.body.remove(child);
+
+        return this;
+    }
+
+    @Override
     public ASTNode addChild(ASTNode child) {
-        if(child instanceof Expression)
-            conditionalExpression  = (Expression) child;
+        if (child instanceof Expression)
+            conditionalExpression = (Expression) child;
         else if (child instanceof ElseClause)
             elseClause = (ElseClause) child;
         else
@@ -50,6 +60,7 @@ public class IfClause extends ASTNode {
 
         return this;
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -58,7 +69,7 @@ public class IfClause extends ASTNode {
         IfClause ifClause = (IfClause) o;
         if (this.elseClause == null)
             return Objects.equals(conditionalExpression, ifClause.getConditionalExpression()) &&
-                Objects.equals(body, ifClause.body);
+                    Objects.equals(body, ifClause.body);
         else
             return Objects.equals(conditionalExpression, ifClause.getConditionalExpression()) &&
                     Objects.equals(body, ifClause.body) &&
@@ -74,5 +85,8 @@ public class IfClause extends ASTNode {
     public Expression getConditionalExpression() {
         return conditionalExpression;
     }
-    public ElseClause getElseClause() { return elseClause; }
+
+    public ElseClause getElseClause() {
+        return elseClause;
+    }
 }

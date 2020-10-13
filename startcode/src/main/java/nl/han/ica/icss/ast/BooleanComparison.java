@@ -8,8 +8,8 @@ public class BooleanComparison extends Expression {
     private Expression left;
     private Expression right;
 
-    public BooleanComparison() {
-
+    public BooleanComparison(boolean isNegated) {
+        this.isNegated = isNegated;
     }
 
     public BooleanComparison(ComparisonOperator operator) {
@@ -60,7 +60,7 @@ public class BooleanComparison extends Expression {
         return left;
     }
 
-    public void setLeft(Literal left) {
+    public void setLeft(Expression left) {
         this.left = left;
     }
 
@@ -68,7 +68,7 @@ public class BooleanComparison extends Expression {
         return right;
     }
 
-    public void setRight(Literal right) {
+    public void setRight(Expression right) {
         this.right = right;
     }
 
