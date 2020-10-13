@@ -9,11 +9,12 @@ import java.util.List;
 //EIND UITWERKING
 
 public class RemoveIf implements Transform {
-    private ASTNode parent;
+    private ASTNode scope;
+    private ASTNode parentOfCurrentNode;
 
     @Override
     public void apply(AST ast) {
-        parent = ast.root;
+        scope = ast.root;
         traverseTree(ast.root);
     }
 
@@ -27,11 +28,12 @@ public class RemoveIf implements Transform {
                 final boolean value = ((BoolLiteral) expression).value;
 
                 if (value) {
-                    children.forEach(parent::addChild);
+                    children.forEach(scope::addChild);
                 } else {
+                    parentOfCurrentNode.removeChild(currentNode);
                     if (elseClause != null) {
                         List<ASTNode> elseChildren = elseClause.getChildren();
-                        elseChildren.forEach(parent::addChild);
+                        elseChildren.forEach(scope::addChild);
                     }
                     return;
                 }
@@ -39,9 +41,15 @@ public class RemoveIf implements Transform {
         }
 
         if (currentNode instanceof Stylerule) {
-            parent = currentNode;
+            scope = currentNode;
         }
 
+        if (currentNode instanceof Stylerule
+                || currentNode instanceof IfClause
+                || currentNode instanceof ElseClause) {
+            parentOfCurrentNode = currentNode;
+        }
+        
         children.forEach(this::traverseTree);
     }
 
