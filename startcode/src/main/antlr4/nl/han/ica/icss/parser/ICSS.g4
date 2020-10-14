@@ -57,7 +57,7 @@ stylesheet: variableDeclaration* stylerule+ | EOF;
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: variableHardcodedValue | variableReference | nestedBooleanExpressions | calculation ;
+variableValue: variableHardcodedValue | variableReference | booleanExpressions | calculation ;
 
 variableHardcodedValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
@@ -73,7 +73,7 @@ propertyIdentifier: LOWER_IDENT;
 ifClause: IF BOX_BRACKET_OPEN condition BOX_BRACKET_CLOSE OPEN_BRACE conditionalBody CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE conditionalBody CLOSE_BRACE;
 
-condition: variableReference | nestedBooleanExpressions;
+condition: variableReference | booleanExpressions;
 conditionalBody: conditionalBodyLine+;
 conditionalBodyLine: variableDeclaration | styleDeclaration | ifClause;
 
@@ -92,8 +92,6 @@ hardcodedPropertyValue: hardcodedValue;
 hardcodedValue: dimensionSize | SCALAR | COLOR | TRUE | FALSE;
 
 dimensionSize: PIXELSIZE | PERCENTAGE;
-
-nestedBooleanExpressions: booleanExpressions;
 
 booleanExpressions: booleanExpressions AND booleanExpressions
                     | booleanExpressions OR booleanExpressions
