@@ -84,38 +84,41 @@ public class EvalExpressions implements Transform {
     }
 
     private Literal evaluateBooleanComparison(BooleanComparison expression) {
+        final Expression left = expression.getLeft();
+        final Expression right = expression.getRight();
+
         ComparisonOperator operator = expression.getOperator();
 
-        if (expression.getLeft() instanceof BooleanComparison) {
-            expression.setLeft(evaluateBooleanComparison((BooleanComparison) expression.getLeft()));
+        if (left instanceof BooleanComparison) {
+            expression.setLeft(evaluateBooleanComparison((BooleanComparison) left));
         }
 
-        if (expression.getRight() instanceof BooleanComparison) {
-            expression.setRight(evaluateBooleanComparison((BooleanComparison) expression.getRight()));
+        if (right instanceof BooleanComparison) {
+            expression.setRight(evaluateBooleanComparison((BooleanComparison) right));
         }
 
-        if (expression.getLeft() instanceof BooleanExpression) {
-            expression.setLeft(evaluateBooleanExpression((BooleanExpression) expression.getLeft()));
+        if (left instanceof BooleanExpression) {
+            expression.setLeft(evaluateBooleanExpression((BooleanExpression) left));
         }
 
-        if (expression.getRight() instanceof BooleanExpression) {
-            expression.setRight(evaluateBooleanExpression((BooleanExpression) expression.getRight()));
+        if (right instanceof BooleanExpression) {
+            expression.setRight(evaluateBooleanExpression((BooleanExpression) right));
         }
 
-        if (expression.getLeft() instanceof VariableReference) {
-            expression.setLeft(getVariableValue(((VariableReference) expression.getLeft()).name));
+        if (left instanceof VariableReference) {
+            expression.setLeft(getVariableValue(((VariableReference) left).name));
         }
 
-        if (expression.getRight() instanceof VariableReference) {
-            expression.setRight(getVariableValue(((VariableReference) expression.getRight()).name));
+        if (right instanceof VariableReference) {
+            expression.setRight(getVariableValue(((VariableReference) right).name));
         }
 
-        if (expression.getLeft() instanceof Operation) {
-            expression.setLeft(evaluateOperation((Operation) expression.getLeft()));
+        if (left instanceof Operation) {
+            expression.setLeft(evaluateOperation((Operation) left));
         }
 
-        if (expression.getRight() instanceof Operation) {
-            expression.setRight(evaluateOperation((Operation) expression.getRight()));
+        if (right instanceof Operation) {
+            expression.setRight(evaluateOperation((Operation) right));
         }
 
         Literal leftLiteral = (Literal) expression.getLeft();
