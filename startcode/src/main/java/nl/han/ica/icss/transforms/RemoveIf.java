@@ -37,6 +37,7 @@ public class RemoveIf implements Transform {
     private boolean evaluateIfClause(ASTNode currentNode, List<ASTNode> children) {
         Expression expression = ((IfClause) currentNode).conditionalExpression;
         ElseClause elseClause = ((IfClause) currentNode).elseClause;
+
         if (expression instanceof BoolLiteral) {
             final boolean value = ((BoolLiteral) expression).value;
 
@@ -46,9 +47,11 @@ public class RemoveIf implements Transform {
                 List<ASTNode> elseChildren = elseClause.getChildren();
                 evaluateChildren(elseChildren);
             }
+
             parentOfCurrentNode.removeChild(currentNode);
             return true;
         }
+
         return false;
     }
 

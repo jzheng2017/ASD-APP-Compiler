@@ -114,12 +114,21 @@ public class Checker {
         final boolean bothSidesSameType = left == right;
 
         if (bothSidesSameType) {
-            if ((operator != ComparisonOperator.EQ && operator != ComparisonOperator.NQ && operator != ComparisonOperator.AND && operator != ComparisonOperator.OR)
-                    && (left == ExpressionType.COLOR || right == ExpressionType.BOOL)) {
-                currentNode.setError(String.format("BooleanComparison: Non numeric literals can not be used with the %s operator", operator));
-            }
+            checkValidityOperatorWithExpressionType(currentNode, left, right, operator);
         } else {
             currentNode.setError("BooleanComparison: Both sides must be of the same data type!");
+        }
+    }
+
+    private void checkValidityOperatorWithExpressionType(ASTNode currentNode, ExpressionType left, ExpressionType right, ComparisonOperator operator) {
+        final boolean isNotEqualityOperator = operator != ComparisonOperator.EQ && operator != ComparisonOperator.NQ;
+        final boolean isNotLogicOperator = operator != ComparisonOperator.AND && operator != ComparisonOperator.OR;
+        final boolean isNonNumericExpressionType = left == ExpressionType.COLOR || right == ExpressionType.BOOL;
+
+        final boolean isIllegalBooleanComparison = (isNotEqualityOperator && isNotLogicOperator) && isNonNumericExpressionType;
+
+        if (isIllegalBooleanComparison) {
+            currentNode.setError(String.format("BooleanComparison: Non numeric literals can not be used with the %s operator", operator));
         }
     }
 
@@ -317,7 +326,6 @@ public class Checker {
     }
 
     private ExpressionType getVariableExpressionType(String variableName) {
-        //iterating backwards because the last scope in the list is the most recent scope
         for (HashMap<String, ExpressionType> currentScope : variableTypes) {
             ExpressionType expressionType = currentScope.get(variableName);
 

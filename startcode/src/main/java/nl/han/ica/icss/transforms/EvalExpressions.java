@@ -47,7 +47,6 @@ public class EvalExpressions implements Transform {
 
         if (conditionalExpression instanceof VariableReference) {
             final String expressionName = ((VariableReference) conditionalExpression).name;
-
             currentNode.conditionalExpression = getVariableValue(expressionName);
         } else if (conditionalExpression instanceof BooleanExpression) {
             final BooleanExpression booleanExpression = ((BooleanExpression) conditionalExpression);
@@ -89,6 +88,20 @@ public class EvalExpressions implements Transform {
 
         ComparisonOperator operator = expression.getOperator();
 
+        determineLeftRightPath(expression, left, right);
+
+        Literal leftLiteral = (Literal) expression.getLeft();
+        Literal rightLiteral = (Literal) expression.getRight();
+
+
+        if (expression.isNegated()) {
+            return new BoolLiteral(!(leftLiteral.evaluate(rightLiteral, operator)));
+        } else {
+            return new BoolLiteral(leftLiteral.evaluate(rightLiteral, operator));
+        }
+    }
+
+    private void determineLeftRightPath(BooleanComparison expression, Expression left, Expression right) {
         if (left instanceof BooleanComparison) {
             expression.setLeft(evaluateBooleanComparison((BooleanComparison) left));
         }
@@ -120,22 +133,13 @@ public class EvalExpressions implements Transform {
         if (right instanceof Operation) {
             expression.setRight(evaluateOperation((Operation) right));
         }
-
-        Literal leftLiteral = (Literal) expression.getLeft();
-        Literal rightLiteral = (Literal) expression.getRight();
-
-
-        if (expression.isNegated()) {
-            return new BoolLiteral(!(leftLiteral.evaluate(rightLiteral, operator)));
-        } else {
-            return new BoolLiteral(leftLiteral.evaluate(rightLiteral, operator));
-        }
     }
 
 
     private Literal evaluateBooleanExpression(BooleanExpression expression) {
         final Expression booleanExpression = expression.getExpression();
         Literal variableValue;
+
         if (booleanExpression instanceof VariableReference) {
             final String booleanExpressionName = ((VariableReference) booleanExpression).name;
             variableValue = getVariableValue(booleanExpressionName);
@@ -179,6 +183,7 @@ public class EvalExpressions implements Transform {
 
     private void evaluateDeclaration(Declaration currentNode) {
         final Expression expression = currentNode.expression;
+
         if (expression instanceof VariableReference) {
             final String variableName = ((VariableReference) expression).name;
             currentNode.expression = getVariableValue(variableName);

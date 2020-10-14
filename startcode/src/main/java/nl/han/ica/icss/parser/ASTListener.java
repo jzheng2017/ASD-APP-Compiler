@@ -49,9 +49,7 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void exitStylerule(ICSSParser.StyleruleContext ctx) {
         ASTNode currentStyleRule = currentContainer.pop();
-
         ASTNode stylesheet = currentContainer.peek();
-
         stylesheet.addChild(currentStyleRule);
     }
 
@@ -69,16 +67,13 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void enterPropertyIdentifier(ICSSParser.PropertyIdentifierContext ctx) {
         PropertyName propertyName = new PropertyName(ctx.getChild(0).getText());
-
         currentContainer.push(propertyName);
     }
 
     @Override
     public void exitPropertyIdentifier(ICSSParser.PropertyIdentifierContext ctx) {
         ASTNode currentPropertyName = currentContainer.pop();
-
         ASTNode currentStyleDeclaration = currentContainer.peek();
-
         currentStyleDeclaration.addChild(currentPropertyName);
     }
 
@@ -250,16 +245,6 @@ public class ASTListener extends ICSSBaseListener {
         ASTNode parentOperation = currentContainer.pop();
 
         currentContainer.peek().addChild(parentOperation);
-    }
-
-    @Override
-    public void enterNestedBooleanExpressions(ICSSParser.NestedBooleanExpressionsContext ctx) {
-
-    }
-
-    @Override
-    public void exitNestedBooleanExpressions(ICSSParser.NestedBooleanExpressionsContext ctx) {
-        super.exitNestedBooleanExpressions(ctx);
     }
 
     @Override
