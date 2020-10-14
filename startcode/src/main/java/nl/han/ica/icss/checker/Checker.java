@@ -63,7 +63,7 @@ public class Checker {
 
             if (!referencingUndefinedVariable && variableDoesNotExistYet) {
                 currentScope.put(variableName, variableExpressionType);
-            } else if (!variableDoesNotExistYet){
+            } else if (!variableDoesNotExistYet) {
                 final boolean newValueIsOfSameType = variableExpressionType != ExpressionType.UNDEFINED && existingVariableExpressionType == variableExpressionType;
 
                 if (newValueIsOfSameType) {
@@ -75,6 +75,8 @@ public class Checker {
                                     , existingVariableExpressionType
                                     , variableExpressionType));
                 }
+            } else {
+                currentScope.put(variableName, ExpressionType.UNDEFINED);
             }
         }
     }

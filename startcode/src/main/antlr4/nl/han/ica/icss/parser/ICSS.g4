@@ -97,10 +97,11 @@ nestedBooleanExpressions: booleanExpressions;
 
 booleanExpressions: booleanExpressions AND booleanExpressions
                     | booleanExpressions OR booleanExpressions
+                    | booleanExpressions (LT | LET | GET | GT | EQ | NQ ) booleanExpressions
                     | booleanExpression;
 
 booleanExpression: NEGATION_OPERATOR? (TRUE | FALSE | equality | variableReference);
-equality: NEGATION_OPERATOR? subCalculation (LT | LET | EQ | NQ | GET | GT) NEGATION_OPERATOR? subCalculation;
+equality: NEGATION_OPERATOR? subCalculation (LT | LET | GET | GT | EQ | NQ) NEGATION_OPERATOR? subCalculation;
 
 tagSelector: LOWER_IDENT;
 classSelector: CLASS_IDENT;

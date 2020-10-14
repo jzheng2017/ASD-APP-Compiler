@@ -43,7 +43,7 @@ public class Generator {
                 final String propertyName = ((Declaration) child).property.name;
                 final Expression expression = ((Declaration) child).expression;
                 css.append(newLine)
-                        .append("\t")
+                        .append("  ")
                         .append(propertyName)
                         .append(": ")
                         .append(expression)
