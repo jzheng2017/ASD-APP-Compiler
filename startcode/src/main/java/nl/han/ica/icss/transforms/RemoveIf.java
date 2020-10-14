@@ -41,17 +41,22 @@ public class RemoveIf implements Transform {
             final boolean value = ((BoolLiteral) expression).value;
 
             if (value) {
-                children.forEach(scope::addChild);
-            } else {
-                parentOfCurrentNode.removeChild(currentNode);
-                if (elseClause != null) {
-                    List<ASTNode> elseChildren = elseClause.getChildren();
-                    elseChildren.forEach(scope::addChild);
-                }
-                return true;
+                evaluateChildren(children);
+            } else if (elseClause != null) {
+                List<ASTNode> elseChildren = elseClause.getChildren();
+                evaluateChildren(elseChildren);
             }
+            parentOfCurrentNode.removeChild(currentNode);
+            return true;
         }
         return false;
+    }
+
+    private void evaluateChildren(List<ASTNode> children) {
+        children.stream()
+                .filter(node -> node instanceof Declaration)
+                .forEach(scope::addChild);
+        children.stream().filter(node -> node instanceof IfClause).forEach(this::traverseTree);
     }
 
     private void setScope(ASTNode currentNode) {
