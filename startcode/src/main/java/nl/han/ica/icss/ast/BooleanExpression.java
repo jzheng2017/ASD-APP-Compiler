@@ -20,6 +20,14 @@ public class BooleanExpression extends Expression {
     }
 
     @Override
+    public ASTNode addChild(ASTNode child) {
+        if (child instanceof Expression) {
+            this.expression = (Expression) child;
+        }
+        return this;
+    }
+
+    @Override
     public String getNodeLabel() {
         return (isNegated ? "Negated" : "") + "BooleanExpression";
     }
