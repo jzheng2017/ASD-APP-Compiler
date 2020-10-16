@@ -57,7 +57,7 @@ stylesheet: variableDeclaration* stylerule+ | EOF;
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;
 variableIdentifier: CAPITAL_IDENT;
-variableValue: variableHardcodedValue | variableReference | booleanExpressions | calculation ;
+variableValue: variableHardcodedValue | variableReference | calculation | booleanExpressions;
 
 variableHardcodedValue: TRUE | FALSE | PIXELSIZE | PERCENTAGE | COLOR | SCALAR;
 
@@ -98,7 +98,7 @@ booleanExpressions: booleanExpressions AND booleanExpressions
                     | booleanExpressions (LT | LET | GET | GT | EQ | NQ ) booleanExpressions
                     | booleanExpression;
 
-booleanExpression: NEGATION_OPERATOR? (TRUE | FALSE | equality | variableReference);
+booleanExpression: NEGATION_OPERATOR? (TRUE | FALSE | equality | variableReference | subCalculation );
 equality: NEGATION_OPERATOR? subCalculation (LT | LET | GET | GT | EQ | NQ) NEGATION_OPERATOR? subCalculation;
 
 tagSelector: LOWER_IDENT;

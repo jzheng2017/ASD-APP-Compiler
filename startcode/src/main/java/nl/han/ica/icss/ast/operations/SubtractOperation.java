@@ -2,10 +2,6 @@ package nl.han.ica.icss.ast.operations;
 
 import nl.han.ica.icss.ast.Literal;
 import nl.han.ica.icss.ast.Operation;
-import nl.han.ica.icss.transforms.EvalExpressions;
-
-import java.util.HashMap;
-import java.util.LinkedList;
 
 public class SubtractOperation extends Operation {
 
@@ -16,6 +12,6 @@ public class SubtractOperation extends Operation {
 
     @Override
     public int evaluate() {
-        return ((Literal)lhs).getNumericValue() - ((Literal)rhs).getNumericValue();
+        return ((Literal) lhs).getNumericValue() - ((Literal) rhs).getNumericValue();
     }
 }

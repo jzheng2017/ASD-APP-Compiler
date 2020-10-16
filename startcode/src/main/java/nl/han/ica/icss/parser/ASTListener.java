@@ -28,6 +28,10 @@ public class ASTListener extends ICSSBaseListener {
         currentContainer = new HANStack<>();
     }
 
+    public AST getAST() {
+        return ast;
+    }
+
     @Override
     public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
         currentContainer.push(new Stylesheet());
@@ -269,39 +273,17 @@ public class ASTListener extends ICSSBaseListener {
         boolean isComparison;
 
         if (isNegated) {
-            isComparison = ctx.getChild(1).getChildCount() >= 3;
+            isComparison = ctx.getChild(1).getChildCount() >= 3 && ctx.getChild(1) instanceof ICSSParser.EqualityContext;
         } else {
-            isComparison = ctx.getChild(0).getChildCount() >= 3;
+            isComparison = ctx.getChild(0).getChildCount() >= 3 && ctx.getChild(0) instanceof ICSSParser.EqualityContext;
         }
 
         if (isComparison) {
-            if (ctx.getText().startsWith("!!!"))
-                throw new ParseCancellationException("Not a valid boolean expression!");
-
-            currentContainer.push(new BooleanComparison(isNegated));
+            constructBooleanComparison(ctx, isNegated);
         } else {
-            Expression expression;
-            if (isNegated) {
-                expression = determineValue(ctx.getChild(1).getText());
-                final boolean isInvalidExpression = !(expression instanceof BoolLiteral || expression instanceof VariableReference) || ctx.getText().startsWith("!!");
-
-                if (isInvalidExpression)
-                    throw new ParseCancellationException("Not a valid boolean expression!");
-
-                if (!(expression instanceof VariableReference)) {
-                    currentContainer.push(new BooleanExpression(true, expression));
-                } else {
-                    currentContainer.push(new BooleanExpression(true));
-                }
-            } else {
-                expression = determineValue(ctx.getChild(0).getText());
-                if (!(expression instanceof VariableReference)) {
-                    currentContainer.push(expression);
-                }
-            }
+            constructBooleanExpression(ctx, isNegated);
         }
     }
-
 
     @Override
     public void exitBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
@@ -368,6 +350,45 @@ public class ASTListener extends ICSSBaseListener {
         }
     }
 
+    private void constructBooleanComparison(ICSSParser.BooleanExpressionContext ctx, boolean isNegated) {
+        if (ctx.getText().startsWith("!!!"))
+            throw new ParseCancellationException("Not a valid boolean expression!");
+
+        currentContainer.push(new BooleanComparison(isNegated));
+    }
+
+    private void constructBooleanExpression(ICSSParser.BooleanExpressionContext ctx, boolean isNegated) {
+        if (isNegated) {
+            constructNegatedBooleanExpression(ctx);
+        } else {
+            constructBooleanExpression(ctx);
+        }
+    }
+
+    private void constructBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
+        Expression expression;
+        expression = determineValue(ctx.getChild(0).getText());
+        if (expression instanceof BoolLiteral) {
+            currentContainer.push(expression);
+        }
+    }
+
+    private void constructNegatedBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
+        Expression expression;
+        expression = determineValue(ctx.getChild(1).getText());
+        final boolean isInvalidExpression = !(expression instanceof BoolLiteral || expression instanceof VariableReference) || ctx.getText().startsWith("!!");
+
+        if (isInvalidExpression)
+            throw new ParseCancellationException("Not a valid boolean expression!");
+
+        final boolean isNotVariableReference = !(expression instanceof VariableReference);
+        if (isNotVariableReference) {
+            currentContainer.push(new BooleanExpression(true, expression));
+        } else {
+            currentContainer.push(new BooleanExpression(true));
+        }
+    }
+
     private ComparisonOperator determineComparisonOperator(String operator) {
         switch (operator.strip()) {
             case "<":
@@ -391,14 +412,6 @@ public class ASTListener extends ICSSBaseListener {
         }
     }
 
-    public AST getAST() {
-        return ast;
-    }
-
-    private void determineOperatorAndPushToContainer(final String operator) {
-        currentContainer.push(determineOperator(operator));
-    }
-
     private Operation determineOperator(final String operator) {
         if (operator.equals("*")) {
             return new MultiplyOperation();
@@ -416,20 +429,25 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     private Expression determineValue(final String value) {
-        if (value.startsWith("#")) {
-            return new ColorLiteral(value);
-        } else if (value.endsWith("%")) {
-            return new PercentageLiteral(value);
-        } else if (value.endsWith("px")) {
-            return new PixelLiteral(value);
-        } else if (value.equals("TRUE") || value.equals("FALSE")) {
-            return new BoolLiteral(value);
-        } else if (isPositiveNumber(value)) {
-            return new ScalarLiteral(value);
-        } else if (isAllCharacters(value)) {
-            return new VariableReference(value);
+        try {
+            if (value.startsWith("#")) {
+                return new ColorLiteral(value);
+            } else if (value.endsWith("%")) {
+                return new PercentageLiteral(value);
+            } else if (value.endsWith("px")) {
+                return new PixelLiteral(value);
+            } else if (value.equals("TRUE") || value.equals("FALSE")) {
+                return new BoolLiteral(value);
+            } else if (isPositiveNumber(value)) {
+                return new ScalarLiteral(value);
+            } else if (isAllCharacters(value)) {
+                return new VariableReference(value);
+            }
+        } catch (Exception ex) {
+            throw new ParseCancellationException(String.format("Unexpected value: %s ", value));
         }
-        return null;
+
+        throw new ParseCancellationException(String.format("Unrecognizable value: %s", value));
     }
 
     public boolean isAllCharacters(String value) {
@@ -460,10 +478,6 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     private boolean isChildOfSubCalculation(ICSSParser.HardcodedValueContext ctx) {
-        return ctx.parent.parent instanceof ICSSParser.SubCalculationContext;
-    }
-
-    private boolean isChildOfSubCalculation(ICSSParser.HardcodedPropertyValueContext ctx) {
         return ctx.parent.parent instanceof ICSSParser.SubCalculationContext;
     }
 }

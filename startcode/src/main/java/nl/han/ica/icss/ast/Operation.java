@@ -1,10 +1,6 @@
 package nl.han.ica.icss.ast;
 
-import nl.han.ica.icss.transforms.EvalExpressions;
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
 
 public abstract class Operation extends Expression {
 

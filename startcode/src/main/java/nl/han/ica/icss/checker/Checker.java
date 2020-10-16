@@ -28,6 +28,7 @@ public class Checker {
         List<ASTNode> children = currentNode.getChildren();
 
         final boolean scopeCreated = generateScope(currentNode);
+
         registerVariables(currentNode);
         checkScope(currentNode);
         checkSemantic(currentNode);
@@ -78,6 +79,7 @@ public class Checker {
                 }
             } else {
                 currentScope.put(variableName, ExpressionType.UNDEFINED);
+                currentNode.setError(String.format("VariableAssignment: %s is referencing an undefined variable", variableName));
             }
         }
     }

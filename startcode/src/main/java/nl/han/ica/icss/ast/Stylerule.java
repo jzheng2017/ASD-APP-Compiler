@@ -12,7 +12,6 @@ public class Stylerule extends ASTNode {
     }
 
     public Stylerule(Selector selector, ArrayList<ASTNode> body) {
-
         this.selectors = new ArrayList<>();
         this.selectors.add(selector);
         this.body = body;
