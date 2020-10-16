@@ -28,9 +28,7 @@ public class RemoveIf implements Transform {
         }
 
         setScope(currentNode);
-
         setParent(currentNode);
-
         children.forEach(this::traverseTree);
     }
 

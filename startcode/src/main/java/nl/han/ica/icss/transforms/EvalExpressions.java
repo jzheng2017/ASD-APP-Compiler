@@ -135,7 +135,6 @@ public class EvalExpressions implements Transform {
         }
     }
 
-
     private Literal evaluateBooleanExpression(BooleanExpression expression) {
         final Expression booleanExpression = expression.getExpression();
         Literal variableValue;

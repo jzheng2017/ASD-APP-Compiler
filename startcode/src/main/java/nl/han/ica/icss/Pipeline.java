@@ -79,7 +79,7 @@ public class Pipeline implements ANTLRErrorListener {
 
         } catch (ParseCancellationException e) {
             this.ast = new AST();
-            errors.add("Syntax error");
+            errors.add("Syntax error: " + e.getMessage());
         }
         parsed = errors.isEmpty();
         checked = transformed = false;

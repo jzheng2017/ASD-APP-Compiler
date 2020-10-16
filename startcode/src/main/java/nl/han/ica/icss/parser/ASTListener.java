@@ -10,6 +10,7 @@ import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.selectors.ClassSelector;
 import nl.han.ica.icss.ast.selectors.IdSelector;
 import nl.han.ica.icss.ast.selectors.TagSelector;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 /**
  * This class extracts the ICSS Abstract Syntax Tree from the Antlr Parse tree.
@@ -268,17 +269,25 @@ public class ASTListener extends ICSSBaseListener {
         boolean isComparison;
 
         if (isNegated) {
-            isComparison = ctx.getChild(1).getChildCount() > 1;
+            isComparison = ctx.getChild(1).getChildCount() >= 3;
         } else {
-            isComparison = ctx.getChild(0).getChildCount() > 1;
+            isComparison = ctx.getChild(0).getChildCount() >= 3;
         }
 
         if (isComparison) {
+            if (ctx.getText().startsWith("!!!"))
+                throw new ParseCancellationException("Not a valid boolean expression!");
+
             currentContainer.push(new BooleanComparison(isNegated));
         } else {
             Expression expression;
             if (isNegated) {
                 expression = determineValue(ctx.getChild(1).getText());
+                final boolean isInvalidExpression = !(expression instanceof BoolLiteral || expression instanceof VariableReference) || ctx.getText().startsWith("!!");
+
+                if (isInvalidExpression)
+                    throw new ParseCancellationException("Not a valid boolean expression!");
+
                 if (!(expression instanceof VariableReference)) {
                     currentContainer.push(new BooleanExpression(true, expression));
                 } else {
@@ -300,7 +309,8 @@ public class ASTListener extends ICSSBaseListener {
 
         if (currentContainer.peek() instanceof BooleanExpression
                 || currentContainer.peek() instanceof Literal
-                || currentContainer.peek() instanceof VariableReference) {
+                || currentContainer.peek() instanceof VariableReference
+                || currentContainer.peek() instanceof Operation) {
             ASTNode left = currentContainer.pop();
             currentContainer.peek().addChild(left);
             currentContainer.peek().addChild(right);
@@ -312,6 +322,8 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterEquality(ICSSParser.EqualityContext ctx) {
+        if (ctx.getChildCount() < 3) return;
+
         BooleanComparison booleanComparison = (BooleanComparison) currentContainer.peek();
         ComparisonOperator operator;
         final boolean hasAtLeastOneNegation = ctx.getChildCount() > 3;
@@ -333,6 +345,8 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitEquality(ICSSParser.EqualityContext ctx) {
+        if (ctx.getChildCount() < 3) return;
+
         Expression right = (Expression) currentContainer.pop();
         Expression left = (Expression) currentContainer.pop();
 

@@ -44,8 +44,8 @@ public class Checker {
                 || currentNode instanceof Stylerule
                 || currentNode instanceof IfClause
                 || currentNode instanceof ElseClause) {
-            HashMap<String, ExpressionType> currentScope = new HashMap<>();
-            variableTypes.addFirst(currentScope);
+            HashMap<String, ExpressionType> newScope = new HashMap<>();
+            variableTypes.addFirst(newScope);
             return true;
         }
         return false;
@@ -60,8 +60,9 @@ public class Checker {
 
             final boolean variableDoesNotExistYet = existingVariableExpressionType == ExpressionType.UNDEFINED;
             final boolean referencingUndefinedVariable = variableDoesNotExistYet && variableExpressionType == ExpressionType.UNDEFINED;
+            final boolean isNewVariable = !referencingUndefinedVariable && variableDoesNotExistYet;
 
-            if (!referencingUndefinedVariable && variableDoesNotExistYet) {
+            if (isNewVariable) {
                 currentScope.put(variableName, variableExpressionType);
             } else if (!variableDoesNotExistYet) {
                 final boolean newValueIsOfSameType = variableExpressionType != ExpressionType.UNDEFINED && existingVariableExpressionType == variableExpressionType;
