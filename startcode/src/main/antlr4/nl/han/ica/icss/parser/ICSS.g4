@@ -52,7 +52,8 @@ AND: '&&';
 OR: '||';
 //--- PARSER: ---
 
-stylesheet: variableDeclaration* stylerule+ | EOF;
+stylesheet: stylesheetLines+ | EOF;
+stylesheetLines: variableDeclaration | stylerule;
 
 variableDeclaration: variableIdentifier ASSIGNMENT_OPERATOR variableValue SEMICOLON;
 variableReference: CAPITAL_IDENT;

@@ -271,6 +271,8 @@ public class ASTListener extends ICSSBaseListener {
     public void enterBooleanExpression(ICSSParser.BooleanExpressionContext ctx) {
         final boolean isNegated = ctx.getChildCount() == 2;
         boolean isComparison;
+        
+        if (ctx.getChildCount() == 0) throw new ParseCancellationException("Incomplete expression");
 
         if (isNegated) {
             isComparison = ctx.getChild(1).getChildCount() >= 3 && ctx.getChild(1) instanceof ICSSParser.EqualityContext;
